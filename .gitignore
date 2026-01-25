@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+.pytest_cache
 *.pyc
 *.pyo
 *.pyd
@@ -38,3 +39,6 @@ Thumbs.db
 *.bak
 *.tmp
 temp/
+
+pyproject.toml
+pytest.ini
