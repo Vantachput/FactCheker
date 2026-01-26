@@ -147,7 +147,10 @@ async def call_base_gpt(claim, verified_srcs, unverified_srcs, model_id, user_id
 
 
     # 1. Отримуємо повну відповідь
-    response = await openai_client.chat.completions.create(**kwargs)
+    try:
+        response = await openai_client.chat.completions.create(**kwargs)
+    except Exception as e:
+        return f"Помилка: {str(e)}"
 
     if hasattr(response, 'usage'):
         await log_ai_usage("BASE", model_id, response.usage, user_id)
