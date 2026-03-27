@@ -54,6 +54,11 @@ async def log_ai_usage(method, model_name, usage_data, user_id="Unknown"):
     # 3. Стандартний GPT-4o-mini
     elif "gpt-4o-mini" in model_lower:
         cost = (p_tokens * 0.15 / 1_000_000) + (c_tokens * 0.60 / 1_000_000)
+        # 4. GPT-5-mini
+    
+    elif "gpt-5-mini" in model_lower:
+        # Тарифи: $0.25 за 1M вхідних, $2.00 за 1M вихідних токенів
+        cost = (p_tokens * 0.25 / 1_000_000) + (c_tokens * 2.00 / 1_000_000)
 
     # --- 3. Збереження в JSONL (Аналітика) ---
     analytics_entry = {

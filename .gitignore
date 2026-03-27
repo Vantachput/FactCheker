@@ -42,3 +42,9 @@ temp/
 
 pyproject.toml
 pytest.ini
+bandit_report.html
+bandit_report.txt
+.semgrepignore
+safety_full.txt
+botinok .zip
+.coverage
