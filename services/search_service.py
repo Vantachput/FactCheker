@@ -1,7 +1,7 @@
-import aiohttp
-import json
 import logging
 from urllib.parse import urlparse
+
+import aiohttp
 
 SOURCES = {
     # Офіційні державні ресурси та реєстри
@@ -49,7 +49,9 @@ async def serper_search(query: str, api_key: str):
     
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, json=payload, timeout=10) as response:
+            async with session.post(
+                url, headers=headers, json=payload, timeout=10
+            ) as response:
                 
                 print(f"[SERPER] Статус відповіді: {response.status}")
                 
@@ -62,13 +64,18 @@ async def serper_search(query: str, api_key: str):
                         for i, res in enumerate(results[:3]):
                             print(f"  {i+1}. {res.get('title')} ({res.get('link')})")
                     else:
-                        print("  ⚠️ ПОПЕРЕДЖЕННЯ: Google повернув порожній список organic.")
+                        print(
+                            "  ⚠️ ПОПЕРЕДЖЕННЯ: Google повернув порожній "
+                            "список organic."
+                        )
                     
                     return results
                 else:
                     err_text = await response.text()
                     print(f"[SERPER] ПОМИЛКА API: {err_text}")
-                    logging.error(f"Serper error status: {response.status}, text: {err_text}")
+                    logging.error(
+                        f"Serper error status: {response.status}, text: {err_text}"
+                    )
                     return []
                     
     except Exception as e:
@@ -79,7 +86,7 @@ async def serper_search(query: str, api_key: str):
 def get_domain(url):
     try:
         return urlparse(url).netloc.replace("www.", "")
-    except:
+    except Exception:
         return ""
 
 def filter_sources(results):
@@ -91,9 +98,15 @@ def filter_sources(results):
         domain = get_domain(link)
 
         date_info = f" [{r.get('date')}]" if r.get('date') else ""
-        source_info = f"--- TITLE: {r.get('title')}\nURL: {link}{date_info}\nCONTENT: {r.get('snippet')}\n"
+        source_info = (
+            f"--- TITLE: {r.get('title')}\n"
+            f"URL: {link}{date_info}\n"
+            f"CONTENT: {r.get('snippet')}\n"
+        )
 
-        is_verified = any(domain == d or domain.endswith("." + d) for d in ALLOWED_DOMAINS)
+        is_verified = any(
+            domain == d or domain.endswith("." + d) for d in ALLOWED_DOMAINS
+        )
         
         if is_verified:
             verified.append(source_info)

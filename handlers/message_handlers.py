@@ -1,9 +1,17 @@
 import os
-from database.db_manager import check_and_increment_limit
+
 from telegram import LinkPreviewOptions
-from services.search_service import serper_search, filter_sources
-from services.ai_service import call_together, call_openai_ft, call_base_gpt, call_perplexity, generate_search_query
-from utils.helpers import split_text, get_progress_bar, escape_markdown
+
+from database.db_manager import check_and_increment_limit
+from services.ai_service import (
+    call_base_gpt,
+    call_openai_ft,
+    call_perplexity,
+    call_together,
+    generate_search_query,
+)
+from services.search_service import filter_sources, serper_search
+from utils.helpers import get_progress_bar, split_text
 from utils.keyboards import get_main_menu
 
 
@@ -70,7 +78,8 @@ async def handle_message(update, context, user_states):
     if state.get("action") == "WAITING":
         try:
             # 1. Універсальне отримання тексту
-            # Важливо: використовуємо getattr, щоб уникнути помилок, якщо message чомусь порожній
+            # Важливо: використовуємо getattr, щоб уникнути помилок, 
+            # якщо message чомусь порожній
             msg = update.message
             raw_text = msg.text or msg.caption or ""
             
@@ -84,7 +93,10 @@ async def handle_message(update, context, user_states):
                     claim = f"Новина з джерела ({source}): {raw_text}"
                 elif origin.type == "hidden_user":
                     # Репост від користувача, який приховав профіль
-                    claim = f"Переслана новина від {origin.sender_user_name}: {raw_text}"
+                    claim = (
+                        f"Переслана новина від {origin.sender_user_name}: "
+                        f"{raw_text}"
+                    )
                 elif origin.type == "user":
                     # Репост від конкретного користувача
                     source = origin.sender_user.first_name or "Користувач"
@@ -112,7 +124,8 @@ async def handle_message(update, context, user_states):
             allowed, l_val = await check_and_increment_limit(uid, method, admin_id)
             if not allowed:
                 await status_msg.edit_text(
-                    f"🚫 Ліміт вичерпано. Для цього методу доступно {l_val} запитів на день.", 
+                    f"🚫 Ліміт вичерпано. Для цього методу доступно "
+                    f"{l_val} запитів на день.", 
                     reply_markup=get_main_menu()
                 )
                 return
@@ -138,19 +151,27 @@ async def handle_message(update, context, user_states):
                 raw = await serper_search(search_query, os.getenv("SERPER_API_KEY"))
                 
                 # 2. УНІВЕРСАЛЬНИЙ FALLBACK:
-                # Якщо результатів 0, значить запит був занадто розумним або події не існує.
+                # Якщо результатів 0, значить запит був занадто розумним 
+                # або події не існує.
                 # Спробуємо знайти хоча б згадку джерела або ключових імен.
                 if not raw:
                     print("Attempt 1 failed. Trying broad search...")
-                    # Простий алгоритм: беремо перші 30 слів тексту, щоб Google сам розібрався
+                    # Простий алгоритм: беремо перші 30 слів тексту, 
+                    # щоб Google сам розібрався
                     fallback_query = claim.replace("\n", " ")[:200]
-                    raw = await serper_search(fallback_query, os.getenv("SERPER_API_KEY"))
+                    raw = await serper_search(
+                        fallback_query, os.getenv("SERPER_API_KEY")
+                    )
 
                 verified, unverified = filter_sources(raw)
-                res = await call_base_gpt(claim, verified, unverified, os.getenv("MODEL_NAME"), uid)
+                res = await call_base_gpt(
+                    claim, verified, unverified, os.getenv("MODEL_NAME"), uid
+                )
             
             else: # Perplexity
-                res = await call_perplexity(claim, method, os.getenv("PERPLEXITY_API_KEY"), uid)
+                res = await call_perplexity(
+                    claim, method, os.getenv("PERPLEXITY_API_KEY"), uid
+                )
 
             await send_smart_reply(update, res, status_msg)
             await context.bot.send_message(
@@ -163,11 +184,19 @@ async def handle_message(update, context, user_states):
             # Це зловить будь-яку помилку (наприклад, Markdown або API)
             print(f"КРИТИЧНА ПОМИЛКА: {e}")
             if 'status_msg' in locals():
-                await status_msg.edit_text(f"❌ Помилка: {str(e)[:100]}", reply_markup=get_main_menu())
+                await status_msg.edit_text(
+                    f"❌ Помилка: {str(e)[:100]}", 
+                    reply_markup=get_main_menu()
+                )
             else:
-                await update.message.reply_text(f"❌ Сталася помилка: {str(e)[:100]}", reply_markup=get_main_menu())
+                await update.message.reply_text(
+                    f"❌ Сталася помилка: {str(e)[:100]}", 
+                    reply_markup=get_main_menu()
+                )
         
         # Скидаємо стан тільки після завершення (або помилки)
         user_states[uid]["action"] = None
     else:
-        await update.message.reply_text("Оберіть дію в меню.", reply_markup=get_main_menu())
+        await update.message.reply_text(
+            "Оберіть дію в меню.", reply_markup=get_main_menu()
+        )

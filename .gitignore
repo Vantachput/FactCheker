@@ -48,3 +48,4 @@ bandit_report.txt
 safety_full.txt
 botinok .zip
 .coverage
+*report*

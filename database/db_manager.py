@@ -1,6 +1,7 @@
-import aiosqlite
 import logging
 from datetime import datetime
+
+import aiosqlite
 
 # Глобальна змінна, яка триматиме з'єднання відкритим
 _db_conn: aiosqlite.Connection = None
@@ -40,11 +41,13 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
     # 1. Швидкі перевірки без БД
     try:
         admin_id = int(admin_id) if admin_id else 0
-    except:
+    except (ValueError, TypeError):
         admin_id = 0
 
-    if user_id == admin_id and admin_id != 0: return True, None
-    if model_name == "sonar": return True, None
+    if user_id == admin_id and admin_id != 0:
+        return True, None
+    if model_name == "sonar":
+        return True, None
     
    # 3. Перевірка БД
     if _db_conn is None:
@@ -61,7 +64,8 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
     try:
         # Використовуємо _db_conn напряму
         async with _db_conn.execute(
-            'SELECT count, last_reset FROM usage WHERE user_id = ? AND model_name = ?', 
+            'SELECT count, last_reset FROM usage '
+            'WHERE user_id = ? AND model_name = ?', 
             (user_id, model_name)
         ) as cursor:
             row = await cursor.fetchone()
@@ -71,7 +75,8 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
             if last_reset != today:
                 # Новий день -> скидаємо
                 await _db_conn.execute(
-                    'UPDATE usage SET count = 1, last_reset = ? WHERE user_id = ? AND model_name = ?',
+                    'UPDATE usage SET count = 1, last_reset = ? '
+                    'WHERE user_id = ? AND model_name = ?',
                     (today, user_id, model_name)
                 )
             else:
@@ -80,13 +85,15 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
                     return False, limit_value
                 # Інкремент
                 await _db_conn.execute(
-                    'UPDATE usage SET count = count + 1 WHERE user_id = ? AND model_name = ?',
+                    'UPDATE usage SET count = count + 1 '
+                    'WHERE user_id = ? AND model_name = ?',
                     (user_id, model_name)
                 )
         else:
             # Новий запис
             await _db_conn.execute(
-                'INSERT INTO usage (user_id, model_name, count, last_reset) VALUES (?, ?, 1, ?)',
+                'INSERT INTO usage (user_id, model_name, count, last_reset) '
+                'VALUES (?, ?, 1, ?)',
                 (user_id, model_name, today)
             )
 

@@ -1,11 +1,18 @@
-import os
 import asyncio
-from dotenv import load_dotenv
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+import os
 
-from database.db_manager import init_db, close_db
-from handlers.command_handlers import start
+from dotenv import load_dotenv
+from telegram.ext import (
+    ApplicationBuilder,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+
+from database.db_manager import close_db, init_db
 from handlers.callback_handlers import handle_callback
+from handlers.command_handlers import start
 from handlers.message_handlers import handle_message
 
 load_dotenv()

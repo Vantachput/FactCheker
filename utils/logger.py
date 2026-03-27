@@ -1,7 +1,8 @@
-import logging
 import json
-import aiofiles
+import logging
 from datetime import datetime
+
+import aiofiles
 
 # Налаштування звичайного текстового логу
 logging.basicConfig(
@@ -16,7 +17,7 @@ async def log_ai_usage(method, model_name, usage_data, user_id="Unknown"):
     Універсальний логер для OpenAI та Perplexity з розрахунком вартості.
     """
     if not usage_data:
-        logging.warning("No usage data"); 
+        logging.warning("No usage data") 
         return
     # --- 1. Отримання токенів (Універсально для dict та об'єктів) ---
     if isinstance(usage_data, dict):
@@ -77,7 +78,10 @@ async def log_ai_usage(method, model_name, usage_data, user_id="Unknown"):
 
     # --- 4. Формування запису для текстового файлу ---
     extra_info = f"R:{reasoning}, Cit:{citations}, Q:{queries}"
-    file_log = f"| ID:{user_id} | {method} | {model_name} | P:{p_tokens} C:{c_tokens} | {extra_info} | T:{total} | ${cost:.5f}"
+    file_log = (
+        f"| ID:{user_id} | {method} | {model_name} | P:{p_tokens} "
+        f"C:{c_tokens} | {extra_info} | T:{total} | ${cost:.5f}"
+    )
     logging.info(file_log)
 
     # --- 5. Гарний вивід у консоль ---
@@ -93,14 +97,23 @@ async def log_ai_usage(method, model_name, usage_data, user_id="Unknown"):
     reset = "\033[0m"
 
     print("\n" + "─"*75)
-    print(f" {time_str} | ID: {str(user_id):<12} | {method:10} | Cost: {color}${cost:.5f}{reset}")
-    print(f" Mod: {model_name[:25]:25} | P: {p_tokens:<6} | C: {c_tokens:<6} | T: {total:<6}")
+    print(
+        f" {time_str} | ID: {str(user_id):<12} | {method:10} | "
+        f"Cost: {color}${cost:.5f}{reset}"
+    )
+    print(
+        f" Mod: {model_name[:25]:25} | P: {p_tokens:<6} | C: {c_tokens:<6} | "
+        f"T: {total:<6}"
+    )
     
     # Виводимо Reasoning/Citations тільки якщо вони > 0
     details = []
-    if reasoning > 0: details.append(f"Reasoning: {reasoning}")
-    if citations > 0: details.append(f"Citations: {citations}")
-    if queries > 0:   details.append(f"Queries: {queries}")
+    if reasoning > 0:
+        details.append(f"Reasoning: {reasoning}")
+    if citations > 0:
+        details.append(f"Citations: {citations}")
+    if queries > 0:
+        details.append(f"Queries: {queries}")
     
     if details:
         print(f" Details: {' | '.join(details)}")
