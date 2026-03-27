@@ -11,7 +11,10 @@ dist/
 build/
 *.so
 
-# Environment
+# Environment & Virtualenvs
+.venv/
+venv/
+env/
 .env
 *.env
 
@@ -40,12 +43,16 @@ Thumbs.db
 *.tmp
 temp/
 
-pyproject.toml
-pytest.ini
 bandit_report.html
 bandit_report.txt
 .semgrepignore
 safety_full.txt
-botinok .zip
+botinok*.zip
+docs.zip
 .coverage
 *report*
+
+# Sphinx Documentation Build
+docs/build/
+docs/html/
+_build/

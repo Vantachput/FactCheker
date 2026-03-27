@@ -1,3 +1,14 @@
+"""Система логування та аналітики витрат бота.
+
+**Бізнес-логіка (Трекінг вартості):**
+Модуль відповідає за запис усієї статистики використання AI. 
+Кожен запит від користувача конвертується у кількість токенів, які
+перекладаються у долари згідно з тарифами провайдерів (OpenAI, Together).
+Дані зберігаються у двох форматах:
+1. `bot_usage.log` - звичайний текстовий лог для швидкого читання адміном.
+2. `usage_analytics.jsonl` - структурований JSON Lines файл для глибокої
+   машинної аналітики чи побудови графіків.
+"""
 import json
 import logging
 from datetime import datetime
@@ -12,9 +23,19 @@ logging.basicConfig(
     encoding='utf-8'
 )
 
-async def log_ai_usage(method, model_name, usage_data, user_id="Unknown"):
-    """
-    Універсальний логер для OpenAI та Perplexity з розрахунком вартості.
+async def log_ai_usage(method: str, model_name: str, usage_data: object, user_id: str | int = "Unknown"):
+    """Універсальний асинхронний логер для збору статистики токенів та витрат.
+    
+    Функція адаптується до різних форматів об'єкта `usage_data` (звичний словник 
+    чи Pydantic модель від OpenAI/Together). Вона ідентифікує модель за назвою 
+    та автоматично підставляє актуальні тарифи за 1 млн токенів для розрахунку 
+    фінальної ціни `cost`.
+
+    Args:
+        method (str): Метод виклику (наприклад `BASE`, `PERPLEXITY`).
+        model_name (str): Точна назва моделі (наприклад `gpt-4o-mini`).
+        usage_data (object | dict): Об'єкт із кількістю використаних токенів.
+        user_id (str | int, optional): ID користувача у Telegram.
     """
     if not usage_data:
         logging.warning("No usage data") 

@@ -1,3 +1,8 @@
+"""Модуль обробки натискань кнопок (inline клавіатур).
+
+Відповідає за навігацію між меню (Головне, Налаштування, Вибір методу)
+та за зміну активного стану користувача (метод перевірки, готовність до вводу).
+"""
 from utils.keyboards import (
     get_back_button,
     get_ft_menu,
@@ -7,7 +12,17 @@ from utils.keyboards import (
 )
 
 
-async def handle_callback(update, context, user_states):
+async def handle_callback(update, context, user_states: dict):
+    """Обробляє всі `CallbackQuery` від натиснутих інлайн-кнопок.
+    
+    Керує переходами між різними екранами налаштувань та оновлює 
+    `user_states[uid]["method"]` або `user_states[uid]["action"]`.
+
+    Args:
+        update: Запит оновлення (містить `callback_query`).
+        context: Контекст бота.
+        user_states (dict): Глобальний словник сесій користувачів.
+    """
     query = update.callback_query
     await query.answer()
     uid = query.from_user.id

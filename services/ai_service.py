@@ -1,3 +1,21 @@
+"""Ядро системи штучного інтелекту: взаємодія з LLM провайдерами.
+
+**Архітектурне рішення:**
+Модуль абстрагує роботу з трьома різними AI-провайдерами:
+1. OpenAI (для генерації пошукових запитів та аналізу через базові моделі).
+2. Together AI (для швидкого запуску fine-tuned Llama/Містраль моделей).
+3. Perplexity API (для інтерактивного ріал-тайм пошуку та deep research).
+
+**Бізнес-логіка (Промптинг та конвеєр):**
+- Функція `generate_search_query` перетворює емоційний запит користувача на
+  фактичний пошуковий запит (наприклад 'Зеленський заборонив дихати' -> 'Зеленський наказ заборона').
+- Базові GPT моделі (`call_base_gpt`) отримують у контекст уже відфільтровані 
+  джерела (`verified` vs `unverified`), що змушує AI спиратися лише на надійні дані
+  (RAG - Retrieval-Augmented Generation).
+- Моделі сімейства `sonar` (Perplexity) використовують власні інструменти пошуку.
+  Для них налаштовано жорсткі системні промпти, щоб унеможливити використання 
+  англійської мови та змусити ІХ дотримуватися журналістських стандартів.
+"""
 import os
 
 import aiohttp
@@ -13,7 +31,21 @@ openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 together_client = AsyncTogether(api_key=os.getenv("TOGETHER_API_KEY"))
 print(today)
 
-async def generate_search_query(user_text, model_id="gpt-4o-mini"):
+async def generate_search_query(user_text: str, model_id: str = "gpt-4o-mini") -> str:
+    """Генерує оптимізований пошуковий запит з тексту користувача.
+    
+    Алгоритм "Search Query Architect" видаляє емоційні забарвлення, прикметники
+    та конкретні (потенційно фейкові) деталі, залишаючи лише "якірні факти" 
+    (Anchor Facts: дати, локації, власні назви).
+
+    Args:
+        user_text (str): Оригінальне повідомлення від користувача.
+        model_id (str, optional): Модель для генерації. За замовчуванням "gpt-4o-mini".
+
+    Returns:
+        str: Короткий пошуковий запит (4-7 слів українською мовою). Якщо виникне 
+            помилка, повертає перші 100 символів оригінального тексту.
+    """
     sys_prompt = (
         "You are a Search Query Architect. Your goal is to find the REAL event "
         "behind a potentially distorted user claim.\n"
@@ -57,13 +89,28 @@ async def generate_search_query(user_text, model_id="gpt-4o-mini"):
     except Exception:
         return user_text[:100]
 
-async def get_ai_session():
+async def get_ai_session() -> aiohttp.ClientSession:
+    """Повертає або створює глобальну aiohttp сесію для AI-запитів.
+    
+    Returns:
+        aiohttp.ClientSession: Активна сесія для виконання HTTP-запитів.
+    """
     global _ai_session
     if _ai_session is None or _ai_session.closed:
         _ai_session = aiohttp.ClientSession()
     return _ai_session
 
-async def call_together(claim, model_id, uid):
+async def call_together(claim: str, model_id: str, uid: int) -> str:
+    """Надсилає запит до Together AI (зазвичай для локально натренованих моделей).
+    
+    Args:
+        claim (str): Текст повідомлення/новини для перевірки.
+        model_id (str): ID моделі на платформі Together.
+        uid (int): ID користувача для логування використання.
+
+    Returns:
+        str: Відповідь моделі (вердикт та аналіз).
+    """
 
     response = await together_client.chat.completions.create(
         model=model_id, 
@@ -84,7 +131,17 @@ async def call_together(claim, model_id, uid):
     
     return response.choices[0].message.content
 
-async def call_openai_ft(claim, model_id, user_id):
+async def call_openai_ft(claim: str, model_id: str, user_id: int) -> str:
+    """Надсилає запит до Fine-Tuned (додатково натренованої) моделі OpenAI.
+    
+    Args:
+        claim (str): Текст новин для перевірки.
+        model_id (str): ID fine-Tuned моделі (наприклад `ft:gpt-4o-mini...`).
+        user_id (int): ID користувача для логування витрат.
+
+    Returns:
+        str: Повернутий моделлю вердикт.
+    """
     sys_instr = (
         "Ти професійний аналітик новин. Оціни ймовірність правдивості новини у "
         "відсотках (0-100%) та надай коротке обґрунтування вердикту."
@@ -103,8 +160,25 @@ async def call_openai_ft(claim, model_id, user_id):
 
     return response.choices[0].message.content
 
-async def call_base_gpt(claim, verified_srcs, unverified_srcs, model_id, user_id):
+async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: list[str], model_id: str, user_id: int) -> str:
+    """Аналізує новину за допомогою базових моделей OpenAI із наданням контексту (RAG).
     
+    Реалізує логіку:
+    1. Передає масиви "Довірених" і "Неперевірених" джерел.
+    2. Змушує AI порівнювати факти та шукати консенсус між джерелами.
+    3. Визначає підсумковий вердикт (ПРАВДА, МАНІПУЛЯЦІЯ, ФЕЙК, НЕПІДТВЕРДЖЕНО) 
+       на основі матриці логіки (Logic Matrix).
+
+    Args:
+        claim (str): Твердження користувача.
+        verified_srcs (list[str]): Рядки з офіційних та перевірених сайтів (A+, A, B списки).
+        unverified_srcs (list[str]): Інші джерела з Інтернету.
+        model_id (str): Обрана базова модель OpenAI (наприклад `gpt-4o`).
+        user_id (int): ID користувача для статистики.
+
+    Returns:
+        str: Детальний аналіз та вердикт в Markdown форматі.
+    """
     # Складаємо контекст із двох рівнів довіри
     context_text = "--- VERIFIED SOURCES (Trusted/Official):\n"
     if verified_srcs:
@@ -189,7 +263,22 @@ async def call_base_gpt(claim, verified_srcs, unverified_srcs, model_id, user_id
         
     return response.choices[0].message.content
 
-async def call_perplexity(claim, method, api_key, user_id):
+async def call_perplexity(claim: str, method: str, api_key: str, user_id: int) -> str:
+    """Викликає моделі серії Sonar (Perplexity) напряму через REST API.
+    
+    В залежності від `method` (deep-research, reasoning-pro, sonar-huge), 
+    настроює різні системні промпти, температуру, тайм-аути та ліміти токенів.
+    Цей сервіс має власний пошуковий рушій, тому йому не потрібен пошук Serper.
+
+    Args:
+        claim (str): Текст для перевірки.
+        method (str): Внутрішня назва моделі (наприклад `sonar-deep-research`).
+        api_key (str): Ключ доступу до сервісу.
+        user_id (int): ID користувача для логування витрат.
+
+    Returns:
+        str: Згенерована відповідь з оцінкою правдивості твердження.
+    """
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     
     if method == "sonar-deep-research":

@@ -1,3 +1,9 @@
+"""Головний модуль Telegram-бота для перевірки фактів.
+
+Цей модуль відповідає за ініціалізацію Telegram-застосунку, налаштування 
+обробників повідомлень та команд, а також життєвий цикл роботи бота, 
+включно з коректним завершенням (graceful shutdown).
+"""
 import asyncio
 import os
 
@@ -19,12 +25,41 @@ load_dotenv()
 user_states = {}
 
 
-async def start_wrapper(u, c): await start(u, c, user_states)
-async def callback_wrapper(u, c): await handle_callback(u, c, user_states)
-async def message_wrapper(u, c): await handle_message(u, c, user_states)
+async def start_wrapper(u, c):
+    """Обгортка для обробника команди /start.
+
+    Args:
+        u (telegram.Update): Запит оновлення від Telegram.
+        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.
+    """
+    await start(u, c, user_states)
+
+async def callback_wrapper(u, c):
+    """Обгортка для обробника callback-запитів.
+
+    Args:
+        u (telegram.Update): Запит оновлення від Telegram.
+        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.
+    """
+    await handle_callback(u, c, user_states)
+
+async def message_wrapper(u, c):
+    """Обгортка для обробника текстових повідомлень.
+
+    Args:
+        u (telegram.Update): Запит оновлення від Telegram.
+        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.
+    """
+    await handle_message(u, c, user_states)
 
 async def main():
-    """Основна функція запуску бота"""
+    """Основна функція запуску бота та ініціалізації ресурсів.
+    
+    Створює підключення до бази даних, збирає ApplicationBuilder 
+    від бібліотеки python-telegram-bot, реєструє обробники повідомлень 
+    (routers) і запускає цикл (polling). При зупинці коректно закриває
+    всі з'єднання з AI сесіям та БД.
+    """
 
     await init_db()
 

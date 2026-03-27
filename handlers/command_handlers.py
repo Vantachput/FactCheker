@@ -1,10 +1,25 @@
+"""Модуль обробки базових команд бота (наприклад, /start).
+
+Відповідає за початкову ініціалізацію стану користувача та 
+відображення головного меню з інструкціями.
+"""
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from utils.keyboards import get_main_menu
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, user_states):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, user_states: dict):
+    """Обробник команди /start.
+    
+    Скидає або ініціалізує стан користувача, встановлюючи метод "base" 
+    за замовчуванням. Відправляє вітальне повідомлення з головним меню.
+
+    Args:
+        update (telegram.Update): Запит оновлення від клієнта.
+        context (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.
+        user_states (dict): Глобальний словник для зберігання станів сесій.
+    """
     user_states[update.effective_user.id] = {"method": "base", "action": None}
     start_text = (
         "🤖 **Вас вітає Центр Перевірки Фактів (AI Fact-Checker)**\n\n"
