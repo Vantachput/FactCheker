@@ -1,26 +1,26 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="uk" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI &amp; Search Services &mdash; FactChecker 1.0 documentation</title>
+  <title>AI та Пошук (Services) &mdash; FactChecker 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/documentation_options.js?v=5a0ebc6c"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Handlers" href="handlers.html" />
-    <link rel="prev" title="Entry Point (main)" href="main.html" /> 
+    <link rel="index" title="Індекс" href="genindex.html" />
+    <link rel="search" title="Пошук" href="search.html" />
+    <link rel="next" title="Обробники (Handlers)" href="handlers.html" />
+    <link rel="prev" title="Головний Модуль (main)" href="main.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,8 +44,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="main.html">Entry Point (main)</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">AI &amp; Search Services</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Головний Модуль (main)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">AI та Пошук (Services)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#services.ai_service.call_base_gpt"><code class="docutils literal notranslate"><span class="pre">call_base_gpt()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#services.ai_service.call_openai_ft"><code class="docutils literal notranslate"><span class="pre">call_openai_ft()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#services.ai_service.call_perplexity"><code class="docutils literal notranslate"><span class="pre">call_perplexity()</span></code></a></li>
@@ -57,9 +57,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#services.search_service.serper_search"><code class="docutils literal notranslate"><span class="pre">serper_search()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="handlers.html">Handlers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="database.html">Database (SQLite)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="handlers.html">Обробники (Handlers)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">База Даних (Database)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Допоміжні утиліти (Utils)</a></li>
 </ul>
 
         </div>
@@ -76,7 +76,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">AI &amp; Search Services</li>
+      <li class="breadcrumb-item active">AI та Пошук (Services)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/services.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -87,39 +87,51 @@
            <div itemprop="articleBody">
              
   <section id="module-services.ai_service">
-<span id="ai-services"></span><h1>AI &amp; Search Services<a class="headerlink" href="#module-services.ai_service" title="Link to this heading"></a></h1>
-<p>The AI system core: interaction with LLM providers.</p>
-<p><strong>Architectural Decision:</strong> This module abstracts interaction with three different AI providers: 1. OpenAI (for search query generation and analysis via base models). 2. Together AI (for fast inference of fine-tuned Llama/Mistral models). 3. Perplexity API (for interactive real-time search and deep research).</p>
-<p><strong>Business Logic (Prompting &amp; Pipeline):</strong> - The <cite>generate_search_query</cite> function converts an emotional user claim into</p>
+<span id="ai-services"></span><h1>AI та Пошук (Services)<a class="headerlink" href="#module-services.ai_service" title="Link to this heading"></a></h1>
+<p>Ядро системи штучного інтелекту: взаємодія з LLM провайдерами.</p>
+<p><strong>Архітектурне рішення:</strong>
+Модуль абстрагує роботу з трьома різними AI-провайдерами:
+1. OpenAI (для генерації пошукових запитів та аналізу через базові моделі).
+2. Together AI (для швидкого запуску fine-tuned Llama/Містраль моделей).
+3. Perplexity API (для інтерактивного ріал-тайм пошуку та deep research).</p>
+<p><strong>Бізнес-логіка (Промптинг та конвеєр):</strong>
+- Функція <cite>generate_search_query</cite> перетворює емоційний запит користувача на</p>
 <blockquote>
-<div><p>a factual search query (e.g. ‘Zelensky banned breathing’ -&gt; ‘Zelensky order ban’).</p>
+<div><p>фактичний пошуковий запит (наприклад „Зеленський заборонив дихати“ -&gt; „Зеленський наказ заборона“).</p>
 </div></blockquote>
 <ul class="simple">
-<li><p>Base GPT models (<cite>call_base_gpt</cite>) receive pre-filtered sources (<cite>verified</cite> vs <cite>unverified</cite>) in their context, forcing the AI to rely only on trusted data (RAG — Retrieval-Augmented Generation).</p></li>
-<li><p><cite>sonar</cite> family models (Perplexity) use their own built-in search engine. They are configured with strict system prompts to prevent English output and enforce journalistic fact-checking standards.</p></li>
+<li><p>Базові GPT моделі (<cite>call_base_gpt</cite>) отримують у контекст уже відфільтровані
+джерела (<cite>verified</cite> vs <cite>unverified</cite>), що змушує AI спиратися лише на надійні дані
+(RAG - Retrieval-Augmented Generation).</p></li>
+<li><p>Моделі сімейства <cite>sonar</cite> (Perplexity) використовують власні інструменти пошуку.
+Для них налаштовано жорсткі системні промпти, щоб унеможливити використання
+англійської мови та змусити ІХ дотримуватися журналістських стандартів.</p></li>
 </ul>
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.call_base_gpt">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">call_base_gpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verified_srcs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unverified_srcs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#call_base_gpt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.call_base_gpt" title="Link to this definition"></a></dt>
-<dd><p>Analyzes a news claim using base OpenAI models with context (RAG).</p>
-<p>Implements the logic: 1. Passes arrays of ‘Trusted’ and ‘Unverified’ sources. 2. Forces the AI to compare facts and find consensus across sources. 3. Determines the final verdict (TRUE, MANIPULATION, FAKE, UNCONFIRMED)</p>
+<dd><p>Аналізує новину за допомогою базових моделей OpenAI із наданням контексту (RAG).</p>
+<p>Реалізує логіку:
+1. Передає масиви «Довірених» і «Неперевірених» джерел.
+2. Змушує AI порівнювати факти та шукати консенсус між джерелами.
+3. Визначає підсумковий вердикт (ПРАВДА, МАНІПУЛЯЦІЯ, ФЕЙК, НЕПІДТВЕРДЖЕНО)</p>
 <blockquote>
-<div><p>based on a Logic Matrix.</p>
+<div><p>на основі матриці логіки (Logic Matrix).</p>
 </div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>claim</strong> (<em>str</em>) – The user’s claim to verify.</p></li>
-<li><p><strong>verified_srcs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Strings from official and verified sites (A+, A, B whitelists).</p></li>
-<li><p><strong>unverified_srcs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Other general internet sources.</p></li>
-<li><p><strong>model_id</strong> (<em>str</em>) – Selected base OpenAI model (e.g. <cite>gpt-4o</cite>).</p></li>
-<li><p><strong>user_id</strong> (<em>int</em>) – User ID for usage statistics.</p></li>
+<li><p><strong>claim</strong> (<em>str</em>) – Твердження користувача.</p></li>
+<li><p><strong>verified_srcs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Рядки з офіційних та перевірених сайтів (A+, A, B списки).</p></li>
+<li><p><strong>unverified_srcs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Інші джерела з Інтернету.</p></li>
+<li><p><strong>model_id</strong> (<em>str</em>) – Обрана базова модель OpenAI (наприклад <cite>gpt-4o</cite>).</p></li>
+<li><p><strong>user_id</strong> (<em>int</em>) – ID користувача для статистики.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Detailed analysis and verdict in Markdown format.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p>Детальний аналіз та вердикт в Markdown форматі.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -128,19 +140,19 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.call_openai_ft">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">call_openai_ft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#call_openai_ft"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.call_openai_ft" title="Link to this definition"></a></dt>
-<dd><p>Sends a request to a Fine-Tuned OpenAI model.</p>
+<dd><p>Надсилає запит до Fine-Tuned (додатково натренованої) моделі OpenAI.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>claim</strong> (<em>str</em>) – News text to verify.</p></li>
-<li><p><strong>model_id</strong> (<em>str</em>) – Fine-tuned model ID (e.g. <cite>ft:gpt-4o-mini…</cite>).</p></li>
-<li><p><strong>user_id</strong> (<em>int</em>) – User ID for cost logging.</p></li>
+<li><p><strong>claim</strong> (<em>str</em>) – Текст новин для перевірки.</p></li>
+<li><p><strong>model_id</strong> (<em>str</em>) – ID fine-Tuned моделі (наприклад <cite>ft:gpt-4o-mini…</cite>).</p></li>
+<li><p><strong>user_id</strong> (<em>int</em>) – ID користувача для логування витрат.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The verdict returned by the model.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p>Повернутий моделлю вердикт.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -149,21 +161,23 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.call_perplexity">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">call_perplexity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#call_perplexity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.call_perplexity" title="Link to this definition"></a></dt>
-<dd><p>Calls Sonar-series models (Perplexity) directly via REST API.</p>
-<p>Depending on <cite>method</cite> (deep-research, reasoning-pro, sonar-huge), configures different system prompts, temperature, timeouts, and token limits. This service has its own search engine and does not require Serper.</p>
+<dd><p>Викликає моделі серії Sonar (Perplexity) напряму через REST API.</p>
+<p>В залежності від <cite>method</cite> (deep-research, reasoning-pro, sonar-huge),
+настроює різні системні промпти, температуру, тайм-аути та ліміти токенів.
+Цей сервіс має власний пошуковий рушій, тому йому не потрібен пошук Serper.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>claim</strong> (<em>str</em>) – Text to verify.</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – Internal model name (e.g. <cite>sonar-deep-research</cite>).</p></li>
-<li><p><strong>api_key</strong> (<em>str</em>) – API key for the service.</p></li>
-<li><p><strong>user_id</strong> (<em>int</em>) – User ID for cost logging.</p></li>
+<li><p><strong>claim</strong> (<em>str</em>) – Текст для перевірки.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Внутрішня назва моделі (наприклад <cite>sonar-deep-research</cite>).</p></li>
+<li><p><strong>api_key</strong> (<em>str</em>) – Ключ доступу до сервісу.</p></li>
+<li><p><strong>user_id</strong> (<em>int</em>) – ID користувача для логування витрат.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Generated response with the truthfulness assessment of the claim.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p>Згенерована відповідь з оцінкою правдивості твердження.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -172,19 +186,19 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.call_together">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">call_together</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#call_together"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.call_together" title="Link to this definition"></a></dt>
-<dd><p>Sends a request to Together AI (typically for locally fine-tuned models).</p>
+<dd><p>Надсилає запит до Together AI (зазвичай для локально натренованих моделей).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>claim</strong> (<em>str</em>) – Message/news text to verify.</p></li>
-<li><p><strong>model_id</strong> (<em>str</em>) – Model ID on the Together platform.</p></li>
-<li><p><strong>uid</strong> (<em>int</em>) – User ID for usage logging.</p></li>
+<li><p><strong>claim</strong> (<em>str</em>) – Текст повідомлення/новини для перевірки.</p></li>
+<li><p><strong>model_id</strong> (<em>str</em>) – ID моделі на платформі Together.</p></li>
+<li><p><strong>uid</strong> (<em>int</em>) – ID користувача для логування використання.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The model’s response (verdict and analysis).</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p>Відповідь моделі (вердикт та аналіз).</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -193,19 +207,25 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.generate_search_query">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">generate_search_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gpt-4o-mini'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#generate_search_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.generate_search_query" title="Link to this definition"></a></dt>
-<dd><p>Generates an optimized search query from the user’s text.</p>
-<p>The ‘Search Query Architect’ algorithm strips emotional coloring, adjectives, and specific (potentially fake) details, retaining only ‘Anchor Facts’ (dates, locations, proper names).</p>
+<dd><p>Генерує оптимізований пошуковий запит з тексту користувача.</p>
+<p>Алгоритм «Search Query Architect» видаляє емоційні забарвлення, прикметники
+та конкретні (потенційно фейкові) деталі, залишаючи лише «якірні факти»
+(Anchor Facts: дати, локації, власні назви).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>user_text</strong> (<em>str</em>) – Original message from the user.</p></li>
-<li><p><strong>model_id</strong> (<em>str</em><em>, </em><em>optional</em>) – Model to use for generation. Default is “gpt-4o-mini”.</p></li>
+<li><p><strong>user_text</strong> (<em>str</em>) – Оригінальне повідомлення від користувача.</p></li>
+<li><p><strong>model_id</strong> (<em>str</em><em>, </em><em>optional</em>) – Модель для генерації. За замовчуванням «gpt-4o-mini».</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A short search query (4-7 words in Ukrainian). If an error occurs, returns the first 100 characters of the original text.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Короткий пошуковий запит (4-7 слів українською мовою). Якщо виникне</dt><dd><p>помилка, повертає перші 100 символів оригінального тексту.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -214,39 +234,52 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.get_ai_session">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">get_ai_session</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ClientSession</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#get_ai_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.get_ai_session" title="Link to this definition"></a></dt>
-<dd><p>Returns or creates a global aiohttp session for AI requests.</p>
+<dd><p>Повертає або створює глобальну aiohttp сесію для AI-запитів.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Active session for executing HTTP requests.</p>
+<dt class="field-odd">Повертає<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Активна сесія для виконання HTTP-запитів.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dt class="field-even">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-even"><p>aiohttp.ClientSession</p>
 </dd>
 </dl>
 </dd></dl>
 
-<p id="module-services.search_service">Search service via Serper API with source filtering.</p>
-<p><strong>Architectural Decision:</strong> This module separates web-search logic from AI interaction. We use Serper.dev as a proxy for the Google Search API. The module’s key feature is the <cite>filter_sources</cite> mechanism, which implements the <em>source reliability verification business logic</em>.</p>
-<p><strong>Business Logic (Source Filtering Algorithm):</strong> 1. Results received from Google are verified by URL. 2. The parser extracts the domain name from the URL. 3. The domain is compared against <cite>ALLOWED_DOMAINS</cite> — a hardcoded “whitelist”</p>
+<p id="module-services.search_service">Сервіс пошуку через Serper API з фільтрацією джерел.</p>
+<p><strong>Архітектурне рішення:</strong>
+Цей модуль відділяє логіку веб-пошуку від роботи з ШІ. Ми використовуємо Serper.dev
+як проксі для Google Search API. Основна фішка модуля — це механізм <cite>filter_sources</cite>,
+який реалізує <em>бізнес-логіку перевірки надійності</em>.</p>
+<p><strong>Бізнес-логіка (Алгоритм фільтрації джерел):</strong>
+1. Отримані від Google результати перевіряються по URL.
+2. Парсер витягує доменне ім’я з URL.
+3. Домен порівнюється з <cite>ALLOWED_DOMAINS</cite> — жорстко заданим списком «білих»</p>
 <blockquote>
-<div><p>of resources (official government sites, global media at A+, A, B levels).</p>
+<div><p>ресурсів (офіційні урядові сайти, світові медіа рівня A+, A, B).</p>
 </div></blockquote>
 <ol class="arabic simple" start="4">
-<li><p>Results are split into <cite>verified</cite> (whitelisted) and <cite>unverified</cite> (others), allowing the AI to base its verdict only on trusted sources.</p></li>
+<li><p>Результати розділяються на <cite>verified</cite> (перевірені) і <cite>unverified</cite> (інші),
+що дозволяє ШІ у майбутньому посилатися лише на надійні джерела.</p></li>
 </ol>
 <dl class="py function">
 <dt class="sig sig-object py" id="services.search_service.filter_sources">
 <span class="sig-prename descclassname"><span class="pre">services.search_service.</span></span><span class="sig-name descname"><span class="pre">filter_sources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/services/search_service.html#filter_sources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.search_service.filter_sources" title="Link to this definition"></a></dt>
-<dd><p>Splits search results into trusted and untrusted.</p>
-<p>Each found result is compared against the <cite>ALLOWED_DOMAINS</cite> list. Results are formatted as text blocks for subsequent inclusion in the AI prompt.</p>
+<dd><p>Розділяє результати пошуку на надійні та ненадійні.</p>
+<p>Кожен знайдений результат порівнюється зі списком <cite>ALLOWED_DOMAINS</cite>.
+Результати форматуються у вигляді текстових блоків для подальшої
+передачі у промпт штучному інтелекту.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>results</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – List of results from <cite>serper_search</cite>.</p>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>results</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – Список результатів від <cite>serper_search</cite>.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Two lists of formatted results: <cite>(verified_sources, unverified_sources)</cite>.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Два списки відформатованих результатів:</dt><dd><p><cite>(verified_sources, unverified_sources)</cite>.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>tuple[list[str], list[str]]</p>
 </dd>
 </dl>
@@ -260,15 +293,15 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.search_service.get_domain">
 <span class="sig-prename descclassname"><span class="pre">services.search_service.</span></span><span class="sig-name descname"><span class="pre">get_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/search_service.html#get_domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.search_service.get_domain" title="Link to this definition"></a></dt>
-<dd><p>Extracts a clean domain name from a URL.</p>
+<dd><p>Витягує чисте доменне ім’я з URL.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Full URL (e.g. <a class="reference external" href="https://www.bbc.com/news">https://www.bbc.com/news</a>).</p>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Повна адреса (наприклад, <a class="reference external" href="https://www.bbc.com/news">https://www.bbc.com/news</a>).</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Domain without scheme and <cite>www.</cite>, e.g. <cite>bbc.com</cite>.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p>Домен без схеми та <cite>www.</cite>, наприклад <cite>bbc.com</cite>.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -282,19 +315,26 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="services.search_service.serper_search">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.search_service.</span></span><span class="sig-name descname"><span class="pre">serper_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/services/search_service.html#serper_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.search_service.serper_search" title="Link to this definition"></a></dt>
-<dd><p>Performs an async Google search via the Serper API.</p>
-<p>Sends a POST request with the given API key and search query. Parameters <cite>gl=ua</cite> and <cite>hl=uk</cite> are configured to prioritize Ukrainian content.</p>
+<dd><p>Виконує асинхронний пошук в Google через Serper API.</p>
+<p>Метод відправляє POST-запит з вказаним ключем та пошуковим запитом.
+Налаштовано параметри <cite>gl=ua</cite> та <cite>hl=uk</cite> для пріоритезації
+українського контенту.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>query</strong> (<em>str</em>) – Search query (e.g. generated by an LLM).</p></li>
-<li><p><strong>api_key</strong> (<em>str</em>) – Serper API access key.</p></li>
+<li><p><strong>query</strong> (<em>str</em>) – Пошуковий запит (наприклад, згенерований LLM).</p></li>
+<li><p><strong>api_key</strong> (<em>str</em>) – Ключ доступу до Serper API.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>List of dicts with organic search results. Each dict contains keys ‘title’, ‘link’, ‘snippet’, etc. Returns an empty list on error.</p>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Список словників з органічними результатами пошуку.</dt><dd><p>Кожен словник містить ключі „title“, „link“, „snippet“ тощо.
+У разі помилки повертає порожній список.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list[dict]</p>
 </dd>
 </dl>
@@ -306,8 +346,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="main.html" class="btn btn-neutral float-left" title="Entry Point (main)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="handlers.html" class="btn btn-neutral float-right" title="Handlers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="main.html" class="btn btn-neutral float-left" title="Головний Модуль (main)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="handlers.html" class="btn btn-neutral float-right" title="Обробники (Handlers)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -1,26 +1,26 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="uk" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Database (SQLite) &mdash; FactChecker 1.0 documentation</title>
+  <title>База Даних (Database) &mdash; FactChecker 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/documentation_options.js?v=5a0ebc6c"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Utilities" href="utils.html" />
-    <link rel="prev" title="Handlers" href="handlers.html" /> 
+    <link rel="index" title="Індекс" href="genindex.html" />
+    <link rel="search" title="Пошук" href="search.html" />
+    <link rel="next" title="Допоміжні утиліти (Utils)" href="utils.html" />
+    <link rel="prev" title="Обробники (Handlers)" href="handlers.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,16 +44,16 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="main.html">Entry Point (main)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="services.html">AI &amp; Search Services</a></li>
-<li class="toctree-l1"><a class="reference internal" href="handlers.html">Handlers</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Database (SQLite)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Головний Модуль (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">AI та Пошук (Services)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="handlers.html">Обробники (Handlers)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">База Даних (Database)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#database.db_manager.check_and_increment_limit"><code class="docutils literal notranslate"><span class="pre">check_and_increment_limit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#database.db_manager.close_db"><code class="docutils literal notranslate"><span class="pre">close_db()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#database.db_manager.init_db"><code class="docutils literal notranslate"><span class="pre">init_db()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Допоміжні утиліти (Utils)</a></li>
 </ul>
 
         </div>
@@ -70,7 +70,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Database (SQLite)</li>
+      <li class="breadcrumb-item active">База Даних (Database)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/database.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -81,33 +81,39 @@
            <div itemprop="articleBody">
              
   <section id="module-database.db_manager">
-<span id="database"></span><h1>Database (SQLite)<a class="headerlink" href="#module-database.db_manager" title="Link to this heading"></a></h1>
-<p>Module for working with the local SQLite database.</p>
-<p>This module is responsible for initializing and maintaining a persistent connection to <cite>bot_data.db</cite>. Its primary purpose is tracking user consumption of paid AI models, enforcing daily limits, and resetting them.</p>
+<span id="database"></span><h1>База Даних (Database)<a class="headerlink" href="#module-database.db_manager" title="Link to this heading"></a></h1>
+<p>Модуль для роботи з локальною базою даних SQLite.</p>
+<p>Цей модуль відповідає за ініціалізацію та підтримку постійного (persistent)
+з’єднання з базою даних <cite>bot_data.db</cite>. Основне призначення БД — це ведення
+обліку використання користувачами платних моделей штучного інтелекту,
+встановлення денних лімітів та їх обнулення.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="database.db_manager.check_and_increment_limit">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">database.db_manager.</span></span><span class="sig-name descname"><span class="pre">check_and_increment_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/database/db_manager.html#check_and_increment_limit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#database.db_manager.check_and_increment_limit" title="Link to this definition"></a></dt>
-<dd><p>Checks model usage limits and increments the counter.</p>
-<p>Returns False if the limit is exhausted or a connection error occurs. For free models (e.g. ‘sonar’) or the admin, the check always passes and the counter is not incremented. Limits reset automatically at the start of each day.</p>
+<dd><p>Перевіряє ліміти використання моделі та інкрементує лічильник.</p>
+<p>Якщо ліміт вичерпано, або виникла помилка підключення — повертає False.
+Для безкоштовних моделей (наприклад «sonar») або для адміністратора
+перевірка завжди успішна і лічильник не збільшується.
+Ліміти автоматично оновлюються (скидаються) на початку нової доби.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>user_id</strong> (<em>int</em>) – Telegram user ID.</p></li>
-<li><p><strong>model_name</strong> (<em>str</em>) – Model name (e.g. <cite>sonar-reasoning-pro</cite>).</p></li>
-<li><p><strong>admin_id</strong> (<em>int</em><em> | </em><em>str</em>) – Bot administrator ID (compared against user_id).</p></li>
+<li><p><strong>user_id</strong> (<em>int</em>) – ID користувача Telegram.</p></li>
+<li><p><strong>model_name</strong> (<em>str</em>) – Назва моделі (наприклад <cite>sonar-reasoning-pro</cite>).</p></li>
+<li><p><strong>admin_id</strong> (<em>int</em><em> | </em><em>str</em>) – ID адміністратора бота (перевіряється на співпадіння з user_id).</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Повертає<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>Кортеж з двох значень:</dt><dd><ul class="simple">
-<li><p>bool: True if the request is allowed, False if the limit is exhausted.</p></li>
-<li><p>int | None: Remaining quota or daily limit. Usually None for successful or unlimited requests.</p></li>
+<li><p>bool: True, якщо запит дозволено, False — якщо ліміт вичерпано.</p></li>
+<li><p>int | None: Залишок або денний ліміт. Для успішних або безлімітних запитів зазвичай None.</p></li>
 </ul>
 </dd>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>tuple[bool, int | None]</p>
 </dd>
 </dl>
@@ -116,16 +122,20 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="database.db_manager.close_db">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">database.db_manager.</span></span><span class="sig-name descname"><span class="pre">close_db</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/database/db_manager.html#close_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#database.db_manager.close_db" title="Link to this definition"></a></dt>
-<dd><p>Gracefully closes the active database connection.</p>
-<p>This function must be called when the bot is shutting down.</p>
+<dd><p>Коректно закриває активне з’єднання з базою даних.</p>
+<p>Ця функція повинна викликатися при зупинці роботи бота.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="database.db_manager.init_db">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">database.db_manager.</span></span><span class="sig-name descname"><span class="pre">init_db</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/database/db_manager.html#init_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#database.db_manager.init_db" title="Link to this definition"></a></dt>
-<dd><p>Initializes and opens a persistent database connection.</p>
-<p>Creates the <cite>usage</cite> table if it does not yet exist. The table stores <cite>user_id</cite>, <cite>model_name</cite>, <cite>count</cite> (number of requests), and <cite>last_reset</cite> (date of last reset).</p>
-<p>Note that we do not use the <cite>async with</cite> context manager, as we need to keep the connection open in the global <cite>_db_conn</cite> variable for fast access while processing messages.</p>
+<dd><p>Ініціалізує та відкриває постійне з’єднання з базою даних.</p>
+<p>Створює таблицю <cite>usage</cite>, якщо вона ще не існує.
+Таблиця зберігає <cite>user_id</cite>, <cite>model_name</cite>, <cite>count</cite> (кількість запитів)
+та <cite>last_reset</cite> (дату останнього обнулення).</p>
+<p>Зверніть увагу, що ми не використовуємо контекстний менеджер <cite>async with</cite>,
+оскільки нам потрібно зберегти з’єднання відкритим у глобальній змінній
+<cite>_db_conn</cite> для швидкого доступу під час обробки повідомлень.</p>
 </dd></dl>
 
 </section>
@@ -134,8 +144,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="handlers.html" class="btn btn-neutral float-left" title="Handlers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="utils.html" class="btn btn-neutral float-right" title="Utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="handlers.html" class="btn btn-neutral float-left" title="Обробники (Handlers)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="utils.html" class="btn btn-neutral float-right" title="Допоміжні утиліти (Utils)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

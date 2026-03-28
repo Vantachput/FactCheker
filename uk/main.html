@@ -1,26 +1,26 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="uk" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Entry Point (main) &mdash; FactChecker 1.0 documentation</title>
+  <title>Головний Модуль (main) &mdash; FactChecker 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/documentation_options.js?v=5a0ebc6c"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="AI &amp; Search Services" href="services.html" />
-    <link rel="prev" title="FactChecker — AI-Powered Fake News Detector" href="index.html" /> 
+    <link rel="index" title="Індекс" href="genindex.html" />
+    <link rel="search" title="Пошук" href="search.html" />
+    <link rel="next" title="AI та Пошук (Services)" href="services.html" />
+    <link rel="prev" title="FactChecker documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,17 +44,17 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Entry Point (main)</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Головний Модуль (main)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#main.callback_wrapper"><code class="docutils literal notranslate"><span class="pre">callback_wrapper()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#main.message_wrapper"><code class="docutils literal notranslate"><span class="pre">message_wrapper()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#main.start_wrapper"><code class="docutils literal notranslate"><span class="pre">start_wrapper()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="services.html">AI &amp; Search Services</a></li>
-<li class="toctree-l1"><a class="reference internal" href="handlers.html">Handlers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="database.html">Database (SQLite)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">AI та Пошук (Services)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="handlers.html">Обробники (Handlers)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">База Даних (Database)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Допоміжні утиліти (Utils)</a></li>
 </ul>
 
         </div>
@@ -71,7 +71,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Entry Point (main)</li>
+      <li class="breadcrumb-item active">Головний Модуль (main)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/main.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -82,18 +82,20 @@
            <div itemprop="articleBody">
              
   <section id="module-main">
-<span id="main"></span><h1>Entry Point (main)<a class="headerlink" href="#module-main" title="Link to this heading"></a></h1>
-<p>Main module of the Telegram fact-checking bot.</p>
-<p>This module is responsible for initializing the Telegram application, registering message and command handlers, and managing the bot’s lifecycle, including graceful shutdown.</p>
+<span id="main"></span><h1>Головний Модуль (main)<a class="headerlink" href="#module-main" title="Link to this heading"></a></h1>
+<p>Головний модуль Telegram-бота для перевірки фактів.</p>
+<p>Цей модуль відповідає за ініціалізацію Telegram-застосунку, налаштування
+обробників повідомлень та команд, а також життєвий цикл роботи бота,
+включно з коректним завершенням (graceful shutdown).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="main.callback_wrapper">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">callback_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#callback_wrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.callback_wrapper" title="Link to this definition"></a></dt>
-<dd><p>Wrapper for the callback query handler.</p>
+<dd><p>Обгортка для обробника callback-запитів.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>u</strong> (<em>telegram.Update</em>) – Update request from Telegram.</p></li>
-<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Bot context.</p></li>
+<li><p><strong>u</strong> (<em>telegram.Update</em>) – Запит оновлення від Telegram.</p></li>
+<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Контекст бота.</p></li>
 </ul>
 </dd>
 </dl>
@@ -102,19 +104,22 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="main.main">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.main" title="Link to this definition"></a></dt>
-<dd><p>Main function for starting the bot and initializing resources.</p>
-<p>Creates a database connection, builds the Application via python-telegram-bot’s ApplicationBuilder, registers message handlers (routers), and starts the polling loop. On shutdown, gracefully closes all AI session and DB connections.</p>
+<dd><p>Основна функція запуску бота та ініціалізації ресурсів.</p>
+<p>Створює підключення до бази даних, збирає ApplicationBuilder
+від бібліотеки python-telegram-bot, реєструє обробники повідомлень
+(routers) і запускає цикл (polling). При зупинці коректно закриває
+всі з’єднання з AI сесіям та БД.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="main.message_wrapper">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">message_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#message_wrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.message_wrapper" title="Link to this definition"></a></dt>
-<dd><p>Wrapper for the text message handler.</p>
+<dd><p>Обгортка для обробника текстових повідомлень.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>u</strong> (<em>telegram.Update</em>) – Update request from Telegram.</p></li>
-<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Bot context.</p></li>
+<li><p><strong>u</strong> (<em>telegram.Update</em>) – Запит оновлення від Telegram.</p></li>
+<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Контекст бота.</p></li>
 </ul>
 </dd>
 </dl>
@@ -123,12 +128,12 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="main.start_wrapper">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">start_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#start_wrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.start_wrapper" title="Link to this definition"></a></dt>
-<dd><p>Wrapper for the /start command handler.</p>
+<dd><p>Обгортка для обробника команди /start.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>u</strong> (<em>telegram.Update</em>) – Update request from Telegram.</p></li>
-<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Bot context.</p></li>
+<li><p><strong>u</strong> (<em>telegram.Update</em>) – Запит оновлення від Telegram.</p></li>
+<li><p><strong>c</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Контекст бота.</p></li>
 </ul>
 </dd>
 </dl>
@@ -140,8 +145,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="FactChecker — AI-Powered Fake News Detector" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="services.html" class="btn btn-neutral float-right" title="AI &amp; Search Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="FactChecker documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="services.html" class="btn btn-neutral float-right" title="AI та Пошук (Services)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -1,26 +1,26 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="uk" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Handlers &mdash; FactChecker 1.0 documentation</title>
+  <title>Обробники (Handlers) &mdash; FactChecker 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/documentation_options.js?v=5a0ebc6c"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Database (SQLite)" href="database.html" />
-    <link rel="prev" title="AI &amp; Search Services" href="services.html" /> 
+    <link rel="index" title="Індекс" href="genindex.html" />
+    <link rel="search" title="Пошук" href="search.html" />
+    <link rel="next" title="База Даних (Database)" href="database.html" />
+    <link rel="prev" title="AI та Пошук (Services)" href="services.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,17 +44,17 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="main.html">Entry Point (main)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="services.html">AI &amp; Search Services</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Handlers</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Головний Модуль (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">AI та Пошук (Services)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Обробники (Handlers)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#handlers.command_handlers.start"><code class="docutils literal notranslate"><span class="pre">start()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#handlers.callback_handlers.handle_callback"><code class="docutils literal notranslate"><span class="pre">handle_callback()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#handlers.message_handlers.handle_message"><code class="docutils literal notranslate"><span class="pre">handle_message()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#handlers.message_handlers.send_smart_reply"><code class="docutils literal notranslate"><span class="pre">send_smart_reply()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="database.html">Database (SQLite)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">База Даних (Database)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Допоміжні утиліти (Utils)</a></li>
 </ul>
 
         </div>
@@ -71,7 +71,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Handlers</li>
+      <li class="breadcrumb-item active">Обробники (Handlers)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/handlers.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -82,62 +82,76 @@
            <div itemprop="articleBody">
              
   <section id="module-handlers.command_handlers">
-<span id="handlers"></span><h1>Handlers<a class="headerlink" href="#module-handlers.command_handlers" title="Link to this heading"></a></h1>
-<p>Module for handling basic bot commands (e.g., /start).</p>
-<p>Responsible for initial user state initialization and displaying the main menu with instructions.</p>
+<span id="handlers"></span><h1>Обробники (Handlers)<a class="headerlink" href="#module-handlers.command_handlers" title="Link to this heading"></a></h1>
+<p>Модуль обробки базових команд бота (наприклад, /start).</p>
+<p>Відповідає за початкову ініціалізацію стану користувача та
+відображення головного меню з інструкціями.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="handlers.command_handlers.start">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">handlers.command_handlers.</span></span><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Update</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CallbackContext</span><span class="p"><span class="pre">[</span></span><span class="pre">ExtBot</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/handlers/command_handlers.html#start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#handlers.command_handlers.start" title="Link to this definition"></a></dt>
-<dd><p>Handler for the /start command.</p>
-<p>Resets or initializes the user state, setting the method to “base” by default. Sends a welcome message with the main menu.</p>
+<dd><p>Обробник команди /start.</p>
+<p>Скидає або ініціалізує стан користувача, встановлюючи метод «base»
+за замовчуванням. Відправляє вітальне повідомлення з головним меню.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>update</strong> (<em>telegram.Update</em>) – Update request from the client.</p></li>
-<li><p><strong>context</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Bot context.</p></li>
-<li><p><strong>user_states</strong> (<em>dict</em>) – Global dictionary for storing session states.</p></li>
+<li><p><strong>update</strong> (<em>telegram.Update</em>) – Запит оновлення від клієнта.</p></li>
+<li><p><strong>context</strong> (<em>telegram.ext.ContextTypes.DEFAULT_TYPE</em>) – Контекст бота.</p></li>
+<li><p><strong>user_states</strong> (<em>dict</em>) – Глобальний словник для зберігання станів сесій.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<p id="module-handlers.callback_handlers">Module for handling inline keyboard button presses.</p>
-<p>Manages navigation between menus (Main, Settings, Method Selection) and updates the active user state (check method, input readiness).</p>
+<p id="module-handlers.callback_handlers">Модуль обробки натискань кнопок (inline клавіатур).</p>
+<p>Відповідає за навігацію між меню (Головне, Налаштування, Вибір методу)
+та за зміну активного стану користувача (метод перевірки, готовність до вводу).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="handlers.callback_handlers.handle_callback">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">handlers.callback_handlers.</span></span><span class="sig-name descname"><span class="pre">handle_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/handlers/callback_handlers.html#handle_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#handlers.callback_handlers.handle_callback" title="Link to this definition"></a></dt>
-<dd><p>Handles all <cite>CallbackQuery</cite> events from pressed inline buttons.</p>
-<p>Manages transitions between different settings screens and updates <cite>user_states[uid][“method”]</cite> or <cite>user_states[uid][“action”]</cite>.</p>
+<dd><p>Обробляє всі <cite>CallbackQuery</cite> від натиснутих інлайн-кнопок.</p>
+<p>Керує переходами між різними екранами налаштувань та оновлює
+<cite>user_states[uid][«method»]</cite> або <cite>user_states[uid][«action»]</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>update</strong> – Update request (contains <cite>callback_query</cite>).</p></li>
-<li><p><strong>context</strong> – Bot context.</p></li>
-<li><p><strong>user_states</strong> (<em>dict</em>) – Global dictionary of user sessions.</p></li>
+<li><p><strong>update</strong> – Запит оновлення (містить <cite>callback_query</cite>).</p></li>
+<li><p><strong>context</strong> – Контекст бота.</p></li>
+<li><p><strong>user_states</strong> (<em>dict</em>) – Глобальний словник сесій користувачів.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<p id="module-handlers.message_handlers">Module for handling text messages and fact-check requests.</p>
-<p><strong>Business Logic (Verification &amp; Fallback):</strong> When a user sends a news item (as plain text or a forwarded message), this module: 1. Parses the source (channel/group forward or direct). 2. Checks user state and limits. 3. For the <cite>base</cite> method, first generates a smart search query. If that query</p>
+<p id="module-handlers.message_handlers">Модуль обробки текстових повідомлень і запитів на перевірку.</p>
+<p><strong>Бізнес-логіка (Механізм перевірки та Fallback):</strong>
+Коли користувач надсилає новину (прямим текстом або пересилає повідомлення),
+цей модуль виконує наступне:
+1. Парсить джерело (чи репост це з каналу/групи).
+2. Записує стан користувача (перевіряє ліміти).
+3. Якщо метод - <cite>base</cite>, спочатку генерується розумний запит. Якщо розумний запит</p>
 <blockquote>
-<div><p>yields no Google results (e.g. the fake is very abstract), the <strong>Fallback Algorithm</strong> kicks in: the raw news text (first words) is sent directly to Google to find any related debunking.</p>
+<div><p>не дає результатів у Google (наприклад, фейк дуже абстрактний), спрацьовує
+<strong>Fallback-алгоритм</strong>: береться прямий текст новини (перші слова) і
+надсилається в Google, щоб знайти хоч якісь спростування.</p>
 </div></blockquote>
 <ol class="arabic simple" start="4">
-<li><p>Splits large responses (over 4000 characters) into parts via <cite>send_smart_reply</cite>.</p></li>
+<li><p>Розбиває великі відповіді (понад 4000 символів) на частини через <cite>send_smart_reply</cite>.</p></li>
 </ol>
 <dl class="py function">
 <dt class="sig sig-object py" id="handlers.message_handlers.handle_message">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">handlers.message_handlers.</span></span><span class="sig-name descname"><span class="pre">handle_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/handlers/message_handlers.html#handle_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#handlers.message_handlers.handle_message" title="Link to this definition"></a></dt>
-<dd><p>Main content handler for user-submitted news.</p>
-<p>Checks if the user is in the <cite>WAITING</cite> state (i.e. pressed ‘Classify News’). If so, extracts the text or media caption, identifies the forward source, routes the request through the selected AI method (Together, OpenAI, Serper, Perplexity), and returns the verdict.</p>
+<dd><p>Головний обробник контенту (новин) від користувачів.</p>
+<p>Перевіряє, чи знаходиться користувач в стані <cite>WAITING</cite> (тобто натиснув
+«Класифікувати новину»). Якщо так, витягує текст або підпис до медіа,
+визначає джерело репосту, надсилає запит через обраний метод AI
+(Together, OpenAI, Serper, Perplexity) та повертає результат.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>update</strong> – Update request from the client (contains the message).</p></li>
-<li><p><strong>context</strong> – Bot context from telegram.ext.</p></li>
-<li><p><strong>user_states</strong> (<em>dict</em>) – User state dictionary.</p></li>
+<li><p><strong>update</strong> – Запит оновлення від клієнта (містить повідомлення).</p></li>
+<li><p><strong>context</strong> – Контекст бота від telegram.ext.</p></li>
+<li><p><strong>user_states</strong> (<em>dict</em>) – Стан користувача.</p></li>
 </ul>
 </dd>
 </dl>
@@ -146,14 +160,18 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="handlers.message_handlers.send_smart_reply">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">handlers.message_handlers.</span></span><span class="sig-name descname"><span class="pre">send_smart_reply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status_msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/handlers/message_handlers.html#send_smart_reply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#handlers.message_handlers.send_smart_reply" title="Link to this definition"></a></dt>
-<dd><p>Sends large messages in parts.</p>
-<p>Since Telegram limits a single message to 4096 characters, this function splits the text into chunks, ensuring that the Link Preview only appears on the first message (to avoid spam).</p>
+<dd><p>Відправляє великі повідомлення частинами.</p>
+<p>Оскільки Telegram обмежує розмір одного повідомлення 4096 символами,
+ця функція розбиває текст на фрагменти, гарантуючи, що прев’ю посилання
+(LinkPreview) з’явиться лише на першому повідомленні (щоб не спамити).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>update</strong> – Update request.</p></li>
-<li><p><strong>text</strong> (<em>str</em>) – Large text to send.</p></li>
-<li><p><strong>status_msg</strong> (<em>optional</em>) – Status message (“Analyzing…”) to be replaced with the result. If None, sent as a reply.</p></li>
+<li><p><strong>update</strong> – Запит оновлення.</p></li>
+<li><p><strong>text</strong> (<em>str</em>) – Великий текст для відправки.</p></li>
+<li><p><strong>status_msg</strong> (<em>optional</em>) – Повідомлення зі статусом («Аналізую…»),
+яке буде замінено на результат. Якщо None,
+надсилається як Reply.</p></li>
 </ul>
 </dd>
 </dl>
@@ -165,8 +183,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="services.html" class="btn btn-neutral float-left" title="AI &amp; Search Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="database.html" class="btn btn-neutral float-right" title="Database (SQLite)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="services.html" class="btn btn-neutral float-left" title="AI та Пошук (Services)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="database.html" class="btn btn-neutral float-right" title="База Даних (Database)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
