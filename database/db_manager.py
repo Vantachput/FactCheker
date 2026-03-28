@@ -10,6 +10,8 @@ from datetime import datetime
 
 import aiosqlite
 
+from utils.logger import logger
+
 # Глобальна змінна, яка триматиме з'єднання відкритим
 _db_conn: aiosqlite.Connection = None
 
@@ -43,7 +45,7 @@ async def init_db():
             )
         ''')
         await _db_conn.commit()
-        logging.info("✅ База даних підключена (Persistent Connection)")
+        logger.info("✅ База даних підключена (Persistent Connection)")
 
 async def close_db():
     """Коректно закриває активне з'єднання з базою даних.
@@ -54,7 +56,7 @@ async def close_db():
     if _db_conn:
         await _db_conn.close()
         _db_conn = None
-        logging.info("💤 База даних відключена")
+        logger.info("💤 База даних відключена")
 
 async def check_and_increment_limit(user_id, model_name, admin_id):
     """Перевіряє ліміти використання моделі та інкрементує лічильник.
@@ -87,8 +89,7 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
     
    # 3. Перевірка БД
     if _db_conn is None:
-        logging.error("❌ БД не ініціалізована!")
-        print("❌ Помилка: БД не ініціалізована!")
+        logger.error("❌ Помилка: БД не ініціалізована!")
         return False, 0
 
     today = datetime.now().strftime('%Y-%m-%d')
@@ -137,5 +138,5 @@ async def check_and_increment_limit(user_id, model_name, admin_id):
         return True, None
 
     except Exception as e:
-        logging.error(f"DB Error: {e}")
-        return False, 0
+        logger.error(f"DB Error: {e}", exc_info=True)
+        return False, 0

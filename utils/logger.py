@@ -13,15 +13,34 @@ import json
 import logging
 from datetime import datetime
 
-import aiofiles
+import sys
 
-# Налаштування звичайного текстового логу
-logging.basicConfig(
-    filename='bot_usage.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    encoding='utf-8'
-)
+# Створюємо глобальний логер для застосунку
+logger = logging.getLogger("factchecker")
+
+def setup_logging():
+    """Ініціалізація базової системи логування для всього застосунку.
+    
+    Встановлює формат виводу, рівні (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    та налаштовує хендлери (консоль + файл).
+    """
+    # Базове налаштування кореневого логера
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)-7s | %(name)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler('app.log', encoding='utf-8')
+        ]
+    )
+    
+    # Зменшуємо рівень логування для "шумних" зовнішніх бібліотек
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("telegram").setLevel(logging.WARNING)
+    logging.getLogger("aiosqlite").setLevel(logging.WARNING)
+
+    logger.info("Система логування ініціалізована.")
 
 async def log_ai_usage(method: str, model_name: str, usage_data: object, user_id: str | int = "Unknown"):
     """Універсальний асинхронний логер для збору статистики токенів та витрат.
@@ -138,4 +157,4 @@ async def log_ai_usage(method: str, model_name: str, usage_data: object, user_id
     
     if details:
         print(f" Details: {' | '.join(details)}")
-    print("─"*75)
+    print("─"*75)

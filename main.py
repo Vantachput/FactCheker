@@ -20,6 +20,7 @@ from database.db_manager import close_db, init_db
 from handlers.callback_handlers import handle_callback
 from handlers.command_handlers import start
 from handlers.message_handlers import handle_message
+from utils.logger import setup_logging, logger
 
 load_dotenv()
 user_states = {}
@@ -60,7 +61,8 @@ async def main():
     (routers) і запускає цикл (polling). При зупинці коректно закриває
     всі з'єднання з AI сесіям та БД.
     """
-
+    setup_logging()
+    
     await init_db()
 
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
@@ -69,7 +71,7 @@ async def main():
     app.add_handler(CallbackQueryHandler(callback_wrapper))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, message_wrapper))
     
-    print("🚀 Бот запущений асинхронно...")
+    logger.info("🚀 Бот запущений асинхронно...")
 
     # 3. Запуск через контекстний менеджер (найбільш стабільний варіант)
     async with app:
@@ -82,7 +84,7 @@ async def main():
             await asyncio.Event().wait()
         except asyncio.CancelledError:
             # Це виключення виникає при зупинці asyncio.run
-            print("\n⏳ Зупинка процесів...")
+            logger.info("⏳ Зупинка процесів...")
         finally:
             # 1. Зупиняємо Telegram процеси
             if app.updater.running:
@@ -94,13 +96,14 @@ async def main():
             from services.ai_service import _ai_session
             if _ai_session:
                 await _ai_session.close()
-                print("✅ AI сесія закрита.")
+                logger.info("✅ AI сесія закрита.")
 
-            print("🛑 Бот повністю зупинений. Гарного дня!")
+            logger.info("🛑 Бот повністю зупинений. Гарного дня!")
 
 if __name__ == "__main__":
     try:
         # Одне єдине місце входу в асинхронність
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        print("\n🛑 Бот зупинений користувачем.")
+        # logging might be down here, but we can try or use print
+        print("\n🛑 Бот зупинений користувачем.")

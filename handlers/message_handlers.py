@@ -15,6 +15,8 @@ import os
 
 from telegram import LinkPreviewOptions
 
+from utils.logger import logger
+
 from database.db_manager import check_and_increment_limit
 from services.ai_service import (
     call_base_gpt,
@@ -181,7 +183,7 @@ async def handle_message(update, context, user_states: dict):
             elif method == "base":
                 # 1. Спроба знайти подію за "розумним" запитом
                 search_query = await generate_search_query(claim)
-                print(f"Attempt 1 Query: {search_query}") # Для дебагу
+                logger.debug(f"Attempt 1 Query: {search_query}") # Для дебагу
                 
                 raw = await serper_search(search_query, os.getenv("SERPER_API_KEY"))
                 
@@ -190,7 +192,7 @@ async def handle_message(update, context, user_states: dict):
                 # або події не існує.
                 # Спробуємо знайти хоча б згадку джерела або ключових імен.
                 if not raw:
-                    print("Attempt 1 failed. Trying broad search...")
+                    logger.debug("Attempt 1 failed. Trying broad search...")
                     # Простий алгоритм: беремо перші 30 слів тексту, 
                     # щоб Google сам розібрався
                     fallback_query = claim.replace("\n", " ")[:200]
@@ -217,7 +219,7 @@ async def handle_message(update, context, user_states: dict):
 
         except Exception as e:
             # Це зловить будь-яку помилку (наприклад, Markdown або API)
-            print(f"КРИТИЧНА ПОМИЛКА: {e}")
+            logger.error(f"КРИТИЧНА ПОМИЛКА: {e}", exc_info=True)
             if 'status_msg' in locals():
                 await status_msg.edit_text(
                     f"❌ Помилка: {str(e)[:100]}", 
