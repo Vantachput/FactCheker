@@ -1,0 +1,15 @@
+# ==============================================================================
+# Procfile.dev — FactChecker Dev Process Definitions
+# ==============================================================================
+# Розширений Procfile для development-середовища.
+# Запускає бота із watchdog для автоматичного перезапуску при зміні файлів.
+#
+# Передумови:
+#   pip install honcho watchdog
+#
+# Запуск:
+#   honcho -f Procfile.dev start
+# ==============================================================================
+
+# Бот із автоперезапуском при зміні .py файлів (watchmedo з пакету watchdog)
+bot: watchmedo auto-restart --directory=. --pattern="*.py" --recursive -- python main.py
