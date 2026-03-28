@@ -1,0 +1,179 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../source/handlers.rst:2
+msgid "Обробники (Handlers)"
+msgstr "Handlers"
+
+#: handlers.command_handlers:1 of
+msgid "Модуль обробки базових команд бота (наприклад, /start)."
+msgstr "Module for handling basic bot commands (e.g., /start)."
+
+#: handlers.command_handlers:3 of
+msgid ""
+"Відповідає за початкову ініціалізацію стану користувача та відображення "
+"головного меню з інструкціями."
+msgstr ""
+"Responsible for initial user state initialization and displaying "
+"the main menu with instructions."
+
+#: handlers.command_handlers.start:1 of
+msgid "Обробник команди /start."
+msgstr "Handler for the /start command."
+
+#: handlers.command_handlers.start:3 of
+msgid ""
+"Скидає або ініціалізує стан користувача, встановлюючи метод \"base\" за "
+"замовчуванням. Відправляє вітальне повідомлення з головним меню."
+msgstr ""
+"Resets or initializes the user state, setting the method to \"base\" by "
+"default. Sends a welcome message with the main menu."
+
+#: ../../source/handlers.rst
+msgid "Parameters"
+msgstr "Parameters"
+
+#: handlers.command_handlers.start:6 of
+msgid "Запит оновлення від клієнта."
+msgstr "Update request from the client."
+
+#: handlers.callback_handlers.handle_callback:7
+#: handlers.command_handlers.start:8 of
+msgid "Контекст бота."
+msgstr "Bot context."
+
+#: handlers.command_handlers.start:10 of
+msgid "Глобальний словник для зберігання станів сесій."
+msgstr "Global dictionary for storing session states."
+
+#: handlers.callback_handlers:1 of
+msgid "Модуль обробки натискань кнопок (inline клавіатур)."
+msgstr "Module for handling inline keyboard button presses."
+
+#: handlers.callback_handlers:3 of
+msgid ""
+"Відповідає за навігацію між меню (Головне, Налаштування, Вибір методу) та"
+" за зміну активного стану користувача (метод перевірки, готовність до "
+"вводу)."
+msgstr ""
+"Manages navigation between menus (Main, Settings, Method Selection) and "
+"updates the active user state (check method, input readiness)."
+
+#: handlers.callback_handlers.handle_callback:1 of
+msgid "Обробляє всі `CallbackQuery` від натиснутих інлайн-кнопок."
+msgstr "Handles all `CallbackQuery` events from pressed inline buttons."
+
+#: handlers.callback_handlers.handle_callback:3 of
+msgid ""
+"Керує переходами між різними екранами налаштувань та оновлює "
+"`user_states[uid][\"method\"]` або `user_states[uid][\"action\"]`."
+msgstr ""
+"Manages transitions between different settings screens and updates "
+"`user_states[uid][\"method\"]` or `user_states[uid][\"action\"]`."
+
+#: handlers.callback_handlers.handle_callback:6 of
+msgid "Запит оновлення (містить `callback_query`)."
+msgstr "Update request (contains `callback_query`)."
+
+#: handlers.callback_handlers.handle_callback:8 of
+msgid "Глобальний словник сесій користувачів."
+msgstr "Global dictionary of user sessions."
+
+#: handlers.message_handlers:1 of
+msgid "Модуль обробки текстових повідомлень і запитів на перевірку."
+msgstr "Module for handling text messages and fact-check requests."
+
+#: handlers.message_handlers:3 of
+msgid ""
+"**Бізнес-логіка (Механізм перевірки та Fallback):** Коли користувач "
+"надсилає новину (прямим текстом або пересилає повідомлення), цей модуль "
+"виконує наступне: 1. Парсить джерело (чи репост це з каналу/групи). 2. "
+"Записує стан користувача (перевіряє ліміти). 3. Якщо метод - `base`, "
+"спочатку генерується розумний запит. Якщо розумний запит"
+msgstr ""
+"**Business Logic (Verification & Fallback):** When a user sends a news "
+"item (as plain text or a forwarded message), this module: 1. Parses the "
+"source (channel/group forward or direct). 2. Checks user state and limits. "
+"3. For the `base` method, first generates a smart search query. If that query"
+
+#: handlers.message_handlers:9 of
+msgid ""
+"не дає результатів у Google (наприклад, фейк дуже абстрактний), "
+"спрацьовує **Fallback-алгоритм**: береться прямий текст новини (перші "
+"слова) і надсилається в Google, щоб знайти хоч якісь спростування."
+msgstr ""
+"yields no Google results (e.g. the fake is very abstract), the "
+"**Fallback Algorithm** kicks in: the raw news text (first words) is "
+"sent directly to Google to find any related debunking."
+
+#: handlers.message_handlers:12 of
+msgid ""
+"Розбиває великі відповіді (понад 4000 символів) на частини через "
+"`send_smart_reply`."
+msgstr ""
+"Splits large responses (over 4000 characters) into parts via `send_smart_reply`."
+
+#: handlers.message_handlers.handle_message:1 of
+msgid "Головний обробник контенту (новин) від користувачів."
+msgstr "Main content handler for user-submitted news."
+
+#: handlers.message_handlers.handle_message:3 of
+msgid ""
+"Перевіряє, чи знаходиться користувач в стані `WAITING` (тобто натиснув "
+"\"Класифікувати новину\"). Якщо так, витягує текст або підпис до медіа, "
+"визначає джерело репосту, надсилає запит через обраний метод AI "
+"(Together, OpenAI, Serper, Perplexity) та повертає результат."
+msgstr ""
+"Checks if the user is in the `WAITING` state (i.e. pressed 'Classify News'). "
+"If so, extracts the text or media caption, identifies the forward source, "
+"routes the request through the selected AI method "
+"(Together, OpenAI, Serper, Perplexity), and returns the verdict."
+
+#: handlers.message_handlers.handle_message:8 of
+msgid "Запит оновлення від клієнта (містить повідомлення)."
+msgstr "Update request from the client (contains the message)."
+
+#: handlers.message_handlers.handle_message:9 of
+msgid "Контекст бота від telegram.ext."
+msgstr "Bot context from telegram.ext."
+
+#: handlers.message_handlers.handle_message:10 of
+msgid "Стан користувача."
+msgstr "User state dictionary."
+
+#: handlers.message_handlers.send_smart_reply:1 of
+msgid "Відправляє великі повідомлення частинами."
+msgstr "Sends large messages in parts."
+
+#: handlers.message_handlers.send_smart_reply:3 of
+msgid ""
+"Оскільки Telegram обмежує розмір одного повідомлення 4096 символами, ця "
+"функція розбиває текст на фрагменти, гарантуючи, що прев'ю посилання "
+"(LinkPreview) з'явиться лише на першому повідомленні (щоб не спамити)."
+msgstr ""
+"Since Telegram limits a single message to 4096 characters, this function "
+"splits the text into chunks, ensuring that the Link Preview only appears "
+"on the first message (to avoid spam)."
+
+#: handlers.message_handlers.send_smart_reply:7 of
+msgid "Запит оновлення."
+msgstr "Update request."
+
+#: handlers.message_handlers.send_smart_reply:8 of
+msgid "Великий текст для відправки."
+msgstr "Large text to send."
+
+#: handlers.message_handlers.send_smart_reply:10 of
+msgid ""
+"Повідомлення зі статусом (\"Аналізую...\"), яке буде замінено на "
+"результат. Якщо None, надсилається як Reply."
+msgstr ""
+"Status message (\"Analyzing...\") to be replaced with the result. "
+"If None, sent as a reply."

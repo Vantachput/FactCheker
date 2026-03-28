@@ -1,0 +1,378 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../source/services.rst:2
+msgid "AI та Пошук (Services)"
+msgstr "AI & Search Services"
+
+#: of services.ai_service:1
+msgid "Ядро системи штучного інтелекту: взаємодія з LLM провайдерами."
+msgstr "The AI system core: interaction with LLM providers."
+
+#: of services.ai_service:3
+msgid ""
+"**Архітектурне рішення:** Модуль абстрагує роботу з трьома різними "
+"AI-провайдерами: 1. OpenAI (для генерації пошукових запитів та аналізу "
+"через базові моделі). 2. Together AI (для швидкого запуску fine-tuned "
+"Llama/Містраль моделей). 3. Perplexity API (для інтерактивного ріал-тайм "
+"пошуку та deep research)."
+msgstr ""
+"**Architectural Decision:** This module abstracts interaction with three "
+"different AI providers: 1. OpenAI (for search query generation and analysis "
+"via base models). 2. Together AI (for fast inference of fine-tuned "
+"Llama/Mistral models). 3. Perplexity API (for interactive real-time "
+"search and deep research)."
+
+#: of services.ai_service:9
+msgid ""
+"**Бізнес-логіка (Промптинг та конвеєр):** - Функція "
+"`generate_search_query` перетворює емоційний запит користувача на"
+msgstr ""
+"**Business Logic (Prompting & Pipeline):** - The `generate_search_query` "
+"function converts an emotional user claim into"
+
+#: of services.ai_service:11
+msgid ""
+"фактичний пошуковий запит (наприклад 'Зеленський заборонив дихати' -> "
+"'Зеленський наказ заборона')."
+msgstr ""
+"a factual search query (e.g. 'Zelensky banned breathing' -> "
+"'Zelensky order ban')."
+
+#: of services.ai_service:12
+msgid ""
+"Базові GPT моделі (`call_base_gpt`) отримують у контекст уже "
+"відфільтровані джерела (`verified` vs `unverified`), що змушує AI "
+"спиратися лише на надійні дані (RAG - Retrieval-Augmented Generation)."
+msgstr ""
+"Base GPT models (`call_base_gpt`) receive pre-filtered sources "
+"(`verified` vs `unverified`) in their context, forcing the AI to rely "
+"only on trusted data (RAG — Retrieval-Augmented Generation)."
+
+#: of services.ai_service:15
+msgid ""
+"Моделі сімейства `sonar` (Perplexity) використовують власні інструменти "
+"пошуку. Для них налаштовано жорсткі системні промпти, щоб унеможливити "
+"використання англійської мови та змусити ІХ дотримуватися журналістських "
+"стандартів."
+msgstr ""
+"`sonar` family models (Perplexity) use their own built-in search engine. "
+"They are configured with strict system prompts to prevent English output "
+"and enforce journalistic fact-checking standards."
+
+#: of services.ai_service.call_base_gpt:1
+msgid ""
+"Аналізує новину за допомогою базових моделей OpenAI із наданням контексту"
+" (RAG)."
+msgstr "Analyzes a news claim using base OpenAI models with context (RAG)."
+
+#: of services.ai_service.call_base_gpt:3
+msgid ""
+"Реалізує логіку: 1. Передає масиви \"Довірених\" і \"Неперевірених\" "
+"джерел. 2. Змушує AI порівнювати факти та шукати консенсус між джерелами."
+" 3. Визначає підсумковий вердикт (ПРАВДА, МАНІПУЛЯЦІЯ, ФЕЙК, "
+"НЕПІДТВЕРДЖЕНО)"
+msgstr ""
+"Implements the logic: 1. Passes arrays of 'Trusted' and 'Unverified' "
+"sources. 2. Forces the AI to compare facts and find consensus across sources. "
+"3. Determines the final verdict (TRUE, MANIPULATION, FAKE, UNCONFIRMED)"
+
+#: of services.ai_service.call_base_gpt:7
+msgid "на основі матриці логіки (Logic Matrix)."
+msgstr "based on a Logic Matrix."
+
+#: ../../source/services.rst of services.search_service.filter_sources
+#: services.search_service.get_domain
+msgid "Parameters"
+msgstr "Parameters"
+
+#: of services.ai_service.call_base_gpt:9
+msgid "Твердження користувача."
+msgstr "The user's claim to verify."
+
+#: of services.ai_service.call_base_gpt:11
+msgid "Рядки з офіційних та перевірених сайтів (A+, A, B списки)."
+msgstr "Strings from official and verified sites (A+, A, B whitelists)."
+
+#: of services.ai_service.call_base_gpt:13
+msgid "Інші джерела з Інтернету."
+msgstr "Other general internet sources."
+
+#: of services.ai_service.call_base_gpt:15
+msgid "Обрана базова модель OpenAI (наприклад `gpt-4o`)."
+msgstr "Selected base OpenAI model (e.g. `gpt-4o`)."
+
+#: of services.ai_service.call_base_gpt:17
+msgid "ID користувача для статистики."
+msgstr "User ID for usage statistics."
+
+#: ../../source/services.rst of services.search_service.filter_sources
+#: services.search_service.get_domain
+msgid "Returns"
+msgstr "Returns"
+
+#: of services.ai_service.call_base_gpt:20
+msgid "Детальний аналіз та вердикт в Markdown форматі."
+msgstr "Detailed analysis and verdict in Markdown format."
+
+#: ../../source/services.rst of services.search_service.filter_sources
+#: services.search_service.get_domain
+msgid "Return type"
+msgstr "Return type"
+
+#: of services.ai_service.call_openai_ft:1
+msgid "Надсилає запит до Fine-Tuned (додатково натренованої) моделі OpenAI."
+msgstr "Sends a request to a Fine-Tuned OpenAI model."
+
+#: of services.ai_service.call_openai_ft:3
+msgid "Текст новин для перевірки."
+msgstr "News text to verify."
+
+#: of services.ai_service.call_openai_ft:5
+msgid "ID fine-Tuned моделі (наприклад `ft:gpt-4o-mini...`)."
+msgstr "Fine-tuned model ID (e.g. `ft:gpt-4o-mini...`)."
+
+#: of services.ai_service.call_openai_ft:7
+#: services.ai_service.call_perplexity:13
+msgid "ID користувача для логування витрат."
+msgstr "User ID for cost logging."
+
+#: of services.ai_service.call_openai_ft:10
+msgid "Повернутий моделлю вердикт."
+msgstr "The verdict returned by the model."
+
+#: of services.ai_service.call_perplexity:1
+msgid "Викликає моделі серії Sonar (Perplexity) напряму через REST API."
+msgstr "Calls Sonar-series models (Perplexity) directly via REST API."
+
+#: of services.ai_service.call_perplexity:3
+msgid ""
+"В залежності від `method` (deep-research, reasoning-pro, sonar-huge), "
+"настроює різні системні промпти, температуру, тайм-аути та ліміти "
+"токенів. Цей сервіс має власний пошуковий рушій, тому йому не потрібен "
+"пошук Serper."
+msgstr ""
+"Depending on `method` (deep-research, reasoning-pro, sonar-huge), "
+"configures different system prompts, temperature, timeouts, and token limits. "
+"This service has its own search engine and does not require Serper."
+
+#: of services.ai_service.call_perplexity:7
+msgid "Текст для перевірки."
+msgstr "Text to verify."
+
+#: of services.ai_service.call_perplexity:9
+msgid "Внутрішня назва моделі (наприклад `sonar-deep-research`)."
+msgstr "Internal model name (e.g. `sonar-deep-research`)."
+
+#: of services.ai_service.call_perplexity:11
+msgid "Ключ доступу до сервісу."
+msgstr "API key for the service."
+
+#: of services.ai_service.call_perplexity:16
+msgid "Згенерована відповідь з оцінкою правдивості твердження."
+msgstr "Generated response with the truthfulness assessment of the claim."
+
+#: of services.ai_service.call_together:1
+msgid ""
+"Надсилає запит до Together AI (зазвичай для локально натренованих "
+"моделей)."
+msgstr "Sends a request to Together AI (typically for locally fine-tuned models)."
+
+#: of services.ai_service.call_together:3
+msgid "Текст повідомлення/новини для перевірки."
+msgstr "Message/news text to verify."
+
+#: of services.ai_service.call_together:5
+msgid "ID моделі на платформі Together."
+msgstr "Model ID on the Together platform."
+
+#: of services.ai_service.call_together:7
+msgid "ID користувача для логування використання."
+msgstr "User ID for usage logging."
+
+#: of services.ai_service.call_together:10
+msgid "Відповідь моделі (вердикт та аналіз)."
+msgstr "The model's response (verdict and analysis)."
+
+#: of services.ai_service.generate_search_query:1
+msgid "Генерує оптимізований пошуковий запит з тексту користувача."
+msgstr "Generates an optimized search query from the user's text."
+
+#: of services.ai_service.generate_search_query:3
+msgid ""
+"Алгоритм \"Search Query Architect\" видаляє емоційні забарвлення, "
+"прикметники та конкретні (потенційно фейкові) деталі, залишаючи лише "
+"\"якірні факти\" (Anchor Facts: дати, локації, власні назви)."
+msgstr ""
+"The 'Search Query Architect' algorithm strips emotional coloring, "
+"adjectives, and specific (potentially fake) details, retaining only "
+"'Anchor Facts' (dates, locations, proper names)."
+
+#: of services.ai_service.generate_search_query:7
+msgid "Оригінальне повідомлення від користувача."
+msgstr "Original message from the user."
+
+#: of services.ai_service.generate_search_query:9
+msgid "Модель для генерації. За замовчуванням \"gpt-4o-mini\"."
+msgstr "Model to use for generation. Default is \"gpt-4o-mini\"."
+
+#: of services.ai_service.generate_search_query:12
+msgid ""
+"Короткий пошуковий запит (4-7 слів українською мовою). Якщо виникне     "
+"помилка, повертає перші 100 символів оригінального тексту."
+msgstr ""
+"A short search query (4-7 words in Ukrainian). If an error occurs, "
+"returns the first 100 characters of the original text."
+
+#: of services.ai_service.generate_search_query:14
+msgid "Короткий пошуковий запит (4-7 слів українською мовою). Якщо виникне"
+msgstr "A short search query (4-7 words in Ukrainian). If an error occurs,"
+
+#: of services.ai_service.generate_search_query:15
+msgid "помилка, повертає перші 100 символів оригінального тексту."
+msgstr "returns the first 100 characters of the original text."
+
+#: of services.ai_service.get_ai_session:1
+msgid "Повертає або створює глобальну aiohttp сесію для AI-запитів."
+msgstr "Returns or creates a global aiohttp session for AI requests."
+
+#: of services.ai_service.get_ai_session:3
+msgid "Активна сесія для виконання HTTP-запитів."
+msgstr "Active session for executing HTTP requests."
+
+#: of services.search_service:1
+msgid "Сервіс пошуку через Serper API з фільтрацією джерел."
+msgstr "Search service via Serper API with source filtering."
+
+#: of services.search_service:3
+msgid ""
+"**Архітектурне рішення:** Цей модуль відділяє логіку веб-пошуку від "
+"роботи з ШІ. Ми використовуємо Serper.dev як проксі для Google Search "
+"API. Основна фішка модуля — це механізм `filter_sources`, який реалізує "
+"*бізнес-логіку перевірки надійності*."
+msgstr ""
+"**Architectural Decision:** This module separates web-search logic from AI "
+"interaction. We use Serper.dev as a proxy for the Google Search API. The "
+"module's key feature is the `filter_sources` mechanism, which implements "
+"the *source reliability verification business logic*."
+
+#: of services.search_service:8
+msgid ""
+"**Бізнес-логіка (Алгоритм фільтрації джерел):** 1. Отримані від Google "
+"результати перевіряються по URL. 2. Парсер витягує доменне ім'я з URL. 3."
+" Домен порівнюється з `ALLOWED_DOMAINS` — жорстко заданим списком "
+"\"білих\""
+msgstr ""
+"**Business Logic (Source Filtering Algorithm):** 1. Results received from "
+"Google are verified by URL. 2. The parser extracts the domain name from the URL. "
+"3. The domain is compared against `ALLOWED_DOMAINS` — a hardcoded \"whitelist\""
+
+#: of services.search_service:12
+msgid "ресурсів (офіційні урядові сайти, світові медіа рівня A+, A, B)."
+msgstr "of resources (official government sites, global media at A+, A, B levels)."
+
+#: of services.search_service:13
+msgid ""
+"Результати розділяються на `verified` (перевірені) і `unverified` (інші),"
+" що дозволяє ШІ у майбутньому посилатися лише на надійні джерела."
+msgstr ""
+"Results are split into `verified` (whitelisted) and `unverified` (others), "
+"allowing the AI to base its verdict only on trusted sources."
+
+#: of services.search_service.filter_sources:1
+msgid "Розділяє результати пошуку на надійні та ненадійні."
+msgstr "Splits search results into trusted and untrusted."
+
+#: of services.search_service.filter_sources:3
+msgid ""
+"Кожен знайдений результат порівнюється зі списком `ALLOWED_DOMAINS`. "
+"Результати форматуються у вигляді текстових блоків для подальшої передачі"
+" у промпт штучному інтелекту."
+msgstr ""
+"Each found result is compared against the `ALLOWED_DOMAINS` list. "
+"Results are formatted as text blocks for subsequent inclusion in the AI prompt."
+
+#: of services.search_service.filter_sources:7
+msgid "Список результатів від `serper_search`."
+msgstr "List of results from `serper_search`."
+
+#: of services.search_service.filter_sources:10
+msgid ""
+"Два списки відформатованих результатів:     `(verified_sources, "
+"unverified_sources)`."
+msgstr "Two lists of formatted results: `(verified_sources, unverified_sources)`."
+
+#: of services.search_service.filter_sources:12
+msgid "Два списки відформатованих результатів:"
+msgstr "Two lists of formatted results:"
+
+#: of services.search_service.filter_sources:13
+msgid "`(verified_sources, unverified_sources)`."
+msgstr "`(verified_sources, unverified_sources)`."
+
+#: of services.search_service.filter_sources:17
+#: services.search_service.get_domain:10
+msgid "Examples"
+msgstr "Examples"
+
+#: of services.search_service.get_domain:1
+msgid "Витягує чисте доменне ім'я з URL."
+msgstr "Extracts a clean domain name from a URL."
+
+#: of services.search_service.get_domain:3
+msgid "Повна адреса (наприклад, https://www.bbc.com/news)."
+msgstr "Full URL (e.g. https://www.bbc.com/news)."
+
+#: of services.search_service.get_domain:6
+msgid "Домен без схеми та `www.`, наприклад `bbc.com`."
+msgstr "Domain without scheme and `www.`, e.g. `bbc.com`."
+
+#: of services.search_service.serper_search:1
+msgid "Виконує асинхронний пошук в Google через Serper API."
+msgstr "Performs an async Google search via the Serper API."
+
+#: of services.search_service.serper_search:3
+msgid ""
+"Метод відправляє POST-запит з вказаним ключем та пошуковим запитом. "
+"Налаштовано параметри `gl=ua` та `hl=uk` для пріоритезації українського "
+"контенту."
+msgstr ""
+"Sends a POST request with the given API key and search query. "
+"Parameters `gl=ua` and `hl=uk` are configured to prioritize Ukrainian content."
+
+#: of services.search_service.serper_search:7
+msgid "Пошуковий запит (наприклад, згенерований LLM)."
+msgstr "Search query (e.g. generated by an LLM)."
+
+#: of services.search_service.serper_search:9
+msgid "Ключ доступу до Serper API."
+msgstr "Serper API access key."
+
+#: of services.search_service.serper_search:12
+msgid ""
+"Список словників з органічними результатами пошуку.     Кожен словник "
+"містить ключі 'title', 'link', 'snippet' тощо.     У разі помилки "
+"повертає порожній список."
+msgstr ""
+"List of dicts with organic search results. "
+"Each dict contains keys 'title', 'link', 'snippet', etc. "
+"Returns an empty list on error."
+
+#: of services.search_service.serper_search:14
+msgid "Список словників з органічними результатами пошуку."
+msgstr "List of dicts with organic search results."
+
+#: of services.search_service.serper_search:15
+msgid ""
+"Кожен словник містить ключі 'title', 'link', 'snippet' тощо. У разі "
+"помилки повертає порожній список."
+msgstr ""
+"Each dict contains keys 'title', 'link', 'snippet', etc. "
+"Returns an empty list on error."

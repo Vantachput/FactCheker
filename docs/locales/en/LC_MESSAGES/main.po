@@ -1,0 +1,75 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026, Author
+# This file is distributed under the same license as the FactChecker package.
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-28 02:45+0100\n"
+"PO-Revision-Date: 2026-03-28 02:45+0100\n"
+"Last-Translator: Auto\n"
+"Language: en\n"
+"Language-Team: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../source/main.rst:2
+msgid "Головний Модуль (main)"
+msgstr "Entry Point (main)"
+
+#: main:1 of
+msgid "Головний модуль Telegram-бота для перевірки фактів."
+msgstr "Main module of the Telegram fact-checking bot."
+
+#: main:3 of
+msgid ""
+"Цей модуль відповідає за ініціалізацію Telegram-застосунку, налаштування "
+"обробників повідомлень та команд, а також життєвий цикл роботи бота, "
+"включно з коректним завершенням (graceful shutdown)."
+msgstr ""
+"This module is responsible for initializing the Telegram application, "
+"registering message and command handlers, and managing the bot's lifecycle, "
+"including graceful shutdown."
+
+#: main.callback_wrapper:1 of
+msgid "Обгортка для обробника callback-запитів."
+msgstr "Wrapper for the callback query handler."
+
+#: ../../source/main.rst
+msgid "Parameters"
+msgstr "Parameters"
+
+#: main.callback_wrapper:3 main.message_wrapper:3 main.start_wrapper:3 of
+msgid "Запит оновлення від Telegram."
+msgstr "Update request from Telegram."
+
+#: main.callback_wrapper:5 main.message_wrapper:5 main.start_wrapper:5 of
+msgid "Контекст бота."
+msgstr "Bot context."
+
+#: main.main:1 of
+msgid "Основна функція запуску бота та ініціалізації ресурсів."
+msgstr "Main function for starting the bot and initializing resources."
+
+#: main.main:3 of
+msgid ""
+"Створює підключення до бази даних, збирає ApplicationBuilder від "
+"бібліотеки python-telegram-bot, реєструє обробники повідомлень (routers) "
+"і запускає цикл (polling). При зупинці коректно закриває всі з'єднання з "
+"AI сесіям та БД."
+msgstr ""
+"Creates a database connection, builds the Application via python-telegram-bot's "
+"ApplicationBuilder, registers message handlers (routers), and starts the "
+"polling loop. On shutdown, gracefully closes all AI session and DB connections."
+
+#: main.message_wrapper:1 of
+msgid "Обгортка для обробника текстових повідомлень."
+msgstr "Wrapper for the text message handler."
+
+#: main.start_wrapper:1 of
+msgid "Обгортка для обробника команди /start."
+msgstr "Wrapper for the /start command handler."

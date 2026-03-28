@@ -1,0 +1,110 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../source/database.rst:2
+msgid "База Даних (Database)"
+msgstr "Database (SQLite)"
+
+#: database.db_manager:1 of
+msgid "Модуль для роботи з локальною базою даних SQLite."
+msgstr "Module for working with the local SQLite database."
+
+#: database.db_manager:3 of
+msgid ""
+"Цей модуль відповідає за ініціалізацію та підтримку постійного "
+"(persistent) з'єднання з базою даних `bot_data.db`. Основне призначення "
+"БД — це ведення обліку використання користувачами платних моделей "
+"штучного інтелекту, встановлення денних лімітів та їх обнулення."
+msgstr ""
+"This module is responsible for initializing and maintaining a persistent "
+"connection to `bot_data.db`. Its primary purpose is tracking user "
+"consumption of paid AI models, enforcing daily limits, and resetting them."
+
+#: database.db_manager.check_and_increment_limit:1 of
+msgid "Перевіряє ліміти використання моделі та інкрементує лічильник."
+msgstr "Checks model usage limits and increments the counter."
+
+#: database.db_manager.check_and_increment_limit:3 of
+msgid ""
+"Якщо ліміт вичерпано, або виникла помилка підключення — повертає False. "
+"Для безкоштовних моделей (наприклад \"sonar\") або для адміністратора "
+"перевірка завжди успішна і лічильник не збільшується. Ліміти автоматично "
+"оновлюються (скидаються) на початку нової доби."
+msgstr ""
+"Returns False if the limit is exhausted or a connection error occurs. "
+"For free models (e.g. 'sonar') or the admin, the check always passes and "
+"the counter is not incremented. Limits reset automatically at the start of each day."
+
+#: ../../source/database.rst
+msgid "Parameters"
+msgstr "Parameters"
+
+#: database.db_manager.check_and_increment_limit:8 of
+msgid "ID користувача Telegram."
+msgstr "Telegram user ID."
+
+#: database.db_manager.check_and_increment_limit:10 of
+msgid "Назва моделі (наприклад `sonar-reasoning-pro`)."
+msgstr "Model name (e.g. `sonar-reasoning-pro`)."
+
+#: database.db_manager.check_and_increment_limit:12 of
+msgid "ID адміністратора бота (перевіряється на співпадіння з user_id)."
+msgstr "Bot administrator ID (compared against user_id)."
+
+#: ../../source/database.rst
+msgid "Returns"
+msgstr "Returns"
+
+#: database.db_manager.check_and_increment_limit:18 of
+msgid "bool: True, якщо запит дозволено, False — якщо ліміт вичерпано."
+msgstr "bool: True if the request is allowed, False if the limit is exhausted."
+
+#: database.db_manager.check_and_increment_limit:19 of
+msgid ""
+"int | None: Залишок або денний ліміт. Для успішних або безлімітних "
+"запитів зазвичай None."
+msgstr ""
+"int | None: Remaining quota or daily limit. Usually None for successful or unlimited requests."
+
+#: ../../source/database.rst
+msgid "Return type"
+msgstr "Return type"
+
+#: database.db_manager.close_db:1 of
+msgid "Коректно закриває активне з'єднання з базою даних."
+msgstr "Gracefully closes the active database connection."
+
+#: database.db_manager.close_db:3 of
+msgid "Ця функція повинна викликатися при зупинці роботи бота."
+msgstr "This function must be called when the bot is shutting down."
+
+#: database.db_manager.init_db:1 of
+msgid "Ініціалізує та відкриває постійне з'єднання з базою даних."
+msgstr "Initializes and opens a persistent database connection."
+
+#: database.db_manager.init_db:3 of
+msgid ""
+"Створює таблицю `usage`, якщо вона ще не існує. Таблиця зберігає "
+"`user_id`, `model_name`, `count` (кількість запитів) та `last_reset` "
+"(дату останнього обнулення)."
+msgstr ""
+"Creates the `usage` table if it does not yet exist. The table stores "
+"`user_id`, `model_name`, `count` (number of requests), and `last_reset` "
+"(date of last reset)."
+
+#: database.db_manager.init_db:7 of
+msgid ""
+"Зверніть увагу, що ми не використовуємо контекстний менеджер `async "
+"with`, оскільки нам потрібно зберегти з'єднання відкритим у глобальній "
+"змінній `_db_conn` для швидкого доступу під час обробки повідомлень."
+msgstr ""
+"Note that we do not use the `async with` context manager, as we need to "
+"keep the connection open in the global `_db_conn` variable for fast access "
+"while processing messages."

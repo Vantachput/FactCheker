@@ -1,0 +1,29 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../source/index.rst:8
+msgid "Contents:"
+msgstr "Contents:"
+
+#: ../../source/index.rst:2
+msgid "FactChecker documentation"
+msgstr "FactChecker — AI-Powered Fake News Detector"
+
+#: ../../source/index.rst:4
+msgid ""
+"Add your content using ``reStructuredText`` syntax. See the "
+"`reStructuredText <https://www.sphinx-"
+"doc.org/en/master/usage/restructuredtext/index.html>`_ documentation for "
+"details."
+msgstr ""
+"An intelligent Telegram bot for detecting disinformation. "
+"It verifies news authenticity using a hybrid AI architecture: "
+"web search (Serper + GPT RAG pipeline), Perplexity AI (Sonar series), "
+"and fine-tuned models (Llama 3.1, GPT-4o-mini)."

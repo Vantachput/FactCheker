@@ -1,0 +1,253 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FactChecker 1.0\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../source/utils.rst:2
+msgid "Допоміжні утиліти (Utils)"
+msgstr "Utilities"
+
+#: of utils.helpers:1
+msgid "Допоміжні утиліти для обробки тексту та часу."
+msgstr "Helper utilities for text processing and time handling."
+
+#: of utils.helpers:3
+msgid ""
+"Цей модуль містить чисті функції (pure functions), які використовуються "
+"для форматування відповідей, розбиття тексту для Telegram, екранування "
+"символів та роботи з локальним часом України."
+msgstr ""
+"This module contains pure functions used for formatting responses, "
+"splitting text for Telegram, escaping special characters, and working "
+"with Ukrainian local time."
+
+#: of utils.helpers:7
+msgid "Тести (doctest):"
+msgstr "Tests (doctest):"
+
+#: of utils.helpers:8
+msgid ""
+"Ви можете запустити тести цього модуля командою: `python -m doctest "
+"utils/helpers.py -v`"
+msgstr ""
+"You can run the tests for this module with: `python -m doctest "
+"utils/helpers.py -v`"
+
+#: of utils.helpers.escape_markdown:1
+msgid "Екранує спеціальні символи Markdown для безпечної відправки в Telegram."
+msgstr "Escapes special Markdown characters for safe sending in Telegram."
+
+#: of utils.helpers.escape_markdown:3
+msgid ""
+"Telegram боти можуть викликати помилку `ParseError`, якщо відправити "
+"повідомлення з непарними або неправильно відформатованими символами "
+"Markdown."
+msgstr ""
+"Telegram bots may raise a `ParseError` if a message contains unmatched "
+"or incorrectly formatted Markdown characters."
+
+#: ../../source/utils.rst of utils.helpers.escape_markdown
+#: utils.helpers.get_progress_bar utils.helpers.split_text
+msgid "Parameters"
+msgstr "Parameters"
+
+#: of utils.helpers.escape_markdown:6
+msgid "Оригінальний текст."
+msgstr "Original text."
+
+#: ../../source/utils.rst of utils.helpers.escape_markdown
+#: utils.helpers.get_progress_bar utils.helpers.split_text
+msgid "Returns"
+msgstr "Returns"
+
+#: of utils.helpers.escape_markdown:9
+msgid "Текст з екранованими символами `_`, `*`, `[`."
+msgstr "Text with escaped `_`, `*`, `[` characters."
+
+#: ../../source/utils.rst of utils.helpers.escape_markdown
+#: utils.helpers.get_progress_bar utils.helpers.split_text
+msgid "Return type"
+msgstr "Return type"
+
+#: of utils.helpers.escape_markdown:13 utils.helpers.get_progress_bar:13
+#: utils.helpers.split_text:15
+msgid "Examples"
+msgstr "Examples"
+
+#: of utils.helpers.get_progress_bar:1
+msgid "Генерує візуальну шкалу впевненості ШІ (до 10 блоків)."
+msgstr "Generates a visual AI confidence bar (up to 10 blocks)."
+
+#: of utils.helpers.get_progress_bar:3
+msgid ""
+"Функція шукає у тексті згадку відсотка (наприклад, \"85%\"), і перетворює"
+" це число на рядок з емодзі-квадратиками."
+msgstr ""
+"The function searches for a percentage mention in the text (e.g. \"85%\") "
+"and converts it into a string of emoji squares."
+
+#: of utils.helpers.get_progress_bar:6
+msgid "Вхідний текст від AI, що містить відсоток впевненості."
+msgstr "Input text from AI containing the confidence percentage."
+
+#: of utils.helpers.get_progress_bar:9
+msgid ""
+"Відформатований рядок зі шкалою, або порожній рядок, якщо відсоток не "
+"знайдено."
+msgstr "Formatted string with the bar, or an empty string if no percentage is found."
+
+#: of utils.helpers.get_ukraine_time:1
+msgid "Отримує поточний локальний час в Україні."
+msgstr "Returns the current local time in Ukraine."
+
+#: of utils.helpers.get_ukraine_time:3
+msgid "Використовує часовий пояс `Europe/Kyiv`."
+msgstr "Uses the `Europe/Kyiv` timezone."
+
+#: of utils.helpers.get_ukraine_time:5
+msgid "Рядок формату `DD.MM.YYYY HH:MM`."
+msgstr "String in `DD.MM.YYYY HH:MM` format."
+
+#: of utils.helpers.split_text:1
+msgid "Розбиває текст на фрагменти вказаної довжини."
+msgstr "Splits text into chunks of the specified length."
+
+#: of utils.helpers.split_text:3
+msgid ""
+"Telegram має обмеження на розмір одного повідомлення (4096 символів). Ця "
+"функція дозволяє гарантовано розбити великий текст на частини."
+msgstr ""
+"Telegram limits a single message to 4096 characters. This function "
+"reliably splits large text into parts."
+
+#: of utils.helpers.split_text:6
+msgid "Вхідний текст для розбиття."
+msgstr "Input text to split."
+
+#: of utils.helpers.split_text:8
+msgid "Максимальна довжина одного фрагмента. За замовчуванням 4000."
+msgstr "Maximum length of a single chunk. Default is 4000."
+
+#: of utils.helpers.split_text:11
+msgid "Список текстових фрагментів."
+msgstr "List of text chunks."
+
+#: of utils.logger:1
+msgid "Система логування та аналітики витрат бота."
+msgstr "Bot cost analytics and logging system."
+
+#: of utils.logger:3
+msgid ""
+"**Бізнес-логіка (Трекінг вартості):** Модуль відповідає за запис усієї "
+"статистики використання AI. Кожен запит від користувача конвертується у "
+"кількість токенів, які перекладаються у долари згідно з тарифами "
+"провайдерів (OpenAI, Together). Дані зберігаються у двох форматах: 1. "
+"`bot_usage.log` - звичайний текстовий лог для швидкого читання адміном. "
+"2. `usage_analytics.jsonl` - структурований JSON Lines файл для глибокої"
+msgstr ""
+"**Business Logic (Cost Tracking):** This module records all AI usage "
+"statistics. Each request is converted into token counts, then translated "
+"into USD using provider pricing (OpenAI, Together). Data is stored in two "
+"formats: 1. `bot_usage.log` — plain text log for quick admin review. "
+"2. `usage_analytics.jsonl` — structured JSON Lines file for deep"
+
+#: of utils.logger:10
+msgid "машинної аналітики чи побудови графіків."
+msgstr "machine analytics or chart generation."
+
+#: of utils.logger.log_ai_usage:1
+msgid "Універсальний асинхронний логер для збору статистики токенів та витрат."
+msgstr "Universal async logger for collecting token usage and cost statistics."
+
+#: of utils.logger.log_ai_usage:3
+msgid ""
+"Функція адаптується до різних форматів об'єкта `usage_data` (звичний "
+"словник чи Pydantic модель від OpenAI/Together). Вона ідентифікує модель "
+"за назвою та автоматично підставляє актуальні тарифи за 1 млн токенів для"
+" розрахунку фінальної ціни `cost`."
+msgstr ""
+"The function adapts to different `usage_data` formats (plain dict or "
+"Pydantic model from OpenAI/Together). It identifies the model by name "
+"and automatically applies the current per-million-token pricing to "
+"calculate the final `cost`."
+
+#: of utils.logger.log_ai_usage:8
+msgid "Метод виклику (наприклад `BASE`, `PERPLEXITY`)."
+msgstr "Call method (e.g. `BASE`, `PERPLEXITY`)."
+
+#: of utils.logger.log_ai_usage:10
+msgid "Точна назва моделі (наприклад `gpt-4o-mini`)."
+msgstr "Exact model name (e.g. `gpt-4o-mini`)."
+
+#: of utils.logger.log_ai_usage:12
+msgid "Об'єкт із кількістю використаних токенів."
+msgstr "Object containing the number of tokens used."
+
+#: of utils.logger.log_ai_usage:14
+msgid "ID користувача у Telegram."
+msgstr "Telegram user ID."
+
+#: of utils.keyboards:1
+msgid "Набір функцій для управління клавіатурами бота."
+msgstr "A set of functions for managing bot keyboards."
+
+#: of utils.keyboards:3
+msgid ""
+"Цей модуль містить чисті функції, кожна з яких повертає об'єкт "
+"`InlineKeyboardMarkup` з відповідними кнопками для меню Fact-Checker'а."
+msgstr ""
+"This module contains pure functions, each returning an `InlineKeyboardMarkup` "
+"object with the appropriate buttons for the Fact-Checker menu."
+
+#: of utils.keyboards.get_back_button:1
+msgid "Повертає клавіатуру лише з кнопкою 'Скасувати'."
+msgstr "Returns a keyboard with only the 'Cancel' button."
+
+#: of utils.keyboards.get_back_button:3
+msgid "Кнопка відміни поточної дії."
+msgstr "Button for cancelling the current action."
+
+#: of utils.keyboards.get_ft_menu:1
+msgid "Повертає меню вибору навчених (Fine-tuned) моделей."
+msgstr "Returns the Fine-tuned model selection menu."
+
+#: of utils.keyboards.get_ft_menu:3
+msgid "Кнопки для Llama та GPT-4o-mini."
+msgstr "Buttons for Llama and GPT-4o-mini."
+
+#: of utils.keyboards.get_main_menu:1
+msgid "Повертає головне меню бота."
+msgstr "Returns the main bot menu."
+
+#: of utils.keyboards.get_main_menu:3
+msgid "Клавіатура з трьома кнопками: Класифікувати,     Обрати спосіб, Довідка."
+msgstr "Keyboard with three buttons: Classify, Choose Method, Help."
+
+#: of utils.keyboards.get_main_menu:5
+msgid "Клавіатура з трьома кнопками: Класифікувати,"
+msgstr "Keyboard with three buttons: Classify,"
+
+#: of utils.keyboards.get_main_menu:6
+msgid "Обрати спосіб, Довідка."
+msgstr "Choose Method, Help."
+
+#: of utils.keyboards.get_pplx_menu:1
+msgid "Повертає меню вибору моделей Perplexity."
+msgstr "Returns the Perplexity model selection menu."
+
+#: of utils.keyboards.get_pplx_menu:3
+msgid "Кнопки для Sonar, Reasoning, Deep Research."
+msgstr "Buttons for Sonar, Reasoning, Deep Research."
+
+#: of utils.keyboards.get_settings_menu:1
+msgid "Повертає меню вибору категорії методу аналізу."
+msgstr "Returns the analysis method category selection menu."
+
+#: of utils.keyboards.get_settings_menu:3
+msgid "Кнопки Fine-tuning, Web-search, Base."
+msgstr "Buttons: Fine-tuning, Web-search, Base."
