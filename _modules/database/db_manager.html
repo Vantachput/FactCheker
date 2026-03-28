@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>database.db_manager &mdash; FactChecker 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FactChecker
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../main.html">Головний Модуль (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../services.html">AI та Пошук (Services)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../handlers.html">Обробники (Handlers)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database.html">База Даних (Database)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Допоміжні утиліти (Utils)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FactChecker</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">database.db_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for database.db_manager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Модуль для роботи з локальною базою даних SQLite.</span>
+
+<span class="sd">Цей модуль відповідає за ініціалізацію та підтримку постійного (persistent)</span>
+<span class="sd">з&#39;єднання з базою даних `bot_data.db`. Основне призначення БД — це ведення </span>
+<span class="sd">обліку використання користувачами платних моделей штучного інтелекту, </span>
+<span class="sd">встановлення денних лімітів та їх обнулення.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">aiosqlite</span>
+
+<span class="c1"># Глобальна змінна, яка триматиме з&#39;єднання відкритим</span>
+<span class="n">_db_conn</span><span class="p">:</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">Connection</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">LIMITS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;sonar&quot;</span><span class="p">:</span> <span class="mi">999999</span><span class="p">,</span> 
+    <span class="s2">&quot;sonar-reasoning-pro&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;sonar-deep-research&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">}</span>
+
+<div class="viewcode-block" id="init_db">
+<a class="viewcode-back" href="../../database.html#database.db_manager.init_db">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_db</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ініціалізує та відкриває постійне з&#39;єднання з базою даних.</span>
+<span class="sd">    </span>
+<span class="sd">    Створює таблицю `usage`, якщо вона ще не існує. </span>
+<span class="sd">    Таблиця зберігає `user_id`, `model_name`, `count` (кількість запитів)</span>
+<span class="sd">    та `last_reset` (дату останнього обнулення).</span>
+<span class="sd">    </span>
+<span class="sd">    Зверніть увагу, що ми не використовуємо контекстний менеджер `async with`,</span>
+<span class="sd">    оскільки нам потрібно зберегти з&#39;єднання відкритим у глобальній змінній </span>
+<span class="sd">    `_db_conn` для швидкого доступу під час обробки повідомлень.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_db_conn</span>
+    <span class="k">if</span> <span class="n">_db_conn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Ми НЕ використовуємо &#39;async with&#39;, щоб з&#39;єднання не закрилося</span>
+        <span class="n">_db_conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">&#39;bot_data.db&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Створюємо таблицю, якщо її немає</span>
+        <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">            CREATE TABLE IF NOT EXISTS usage (</span>
+<span class="s1">                user_id INTEGER, model_name TEXT, count INTEGER, last_reset TEXT,</span>
+<span class="s1">                PRIMARY KEY (user_id, model_name)</span>
+<span class="s1">            )</span>
+<span class="s1">        &#39;&#39;&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;✅ База даних підключена (Persistent Connection)&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="close_db">
+<a class="viewcode-back" href="../../database.html#database.db_manager.close_db">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_db</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Коректно закриває активне з&#39;єднання з базою даних.</span>
+<span class="sd">    </span>
+<span class="sd">    Ця функція повинна викликатися при зупинці роботи бота.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_db_conn</span>
+    <span class="k">if</span> <span class="n">_db_conn</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">_db_conn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;💤 База даних відключена&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_and_increment_limit">
+<a class="viewcode-back" href="../../database.html#database.db_manager.check_and_increment_limit">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_and_increment_limit</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">admin_id</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Перевіряє ліміти використання моделі та інкрементує лічильник.</span>
+<span class="sd">    </span>
+<span class="sd">    Якщо ліміт вичерпано, або виникла помилка підключення — повертає False.</span>
+<span class="sd">    Для безкоштовних моделей (наприклад &quot;sonar&quot;) або для адміністратора</span>
+<span class="sd">    перевірка завжди успішна і лічильник не збільшується.</span>
+<span class="sd">    Ліміти автоматично оновлюються (скидаються) на початку нової доби.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user_id (int): ID користувача Telegram.</span>
+<span class="sd">        model_name (str): Назва моделі (наприклад `sonar-reasoning-pro`).</span>
+<span class="sd">        admin_id (int | str): ID адміністратора бота (перевіряється на співпадіння з user_id).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[bool, int | None]: Кортеж з двох значень:</span>
+<span class="sd">            - bool: True, якщо запит дозволено, False — якщо ліміт вичерпано.</span>
+<span class="sd">            - int | None: Залишок або денний ліміт. Для успішних або безлімітних запитів зазвичай None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># 1. Швидкі перевірки без БД</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">admin_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">admin_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">admin_id</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="n">admin_id</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">user_id</span> <span class="o">==</span> <span class="n">admin_id</span> <span class="ow">and</span> <span class="n">admin_id</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;sonar&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span>
+    
+   <span class="c1"># 3. Перевірка БД</span>
+    <span class="k">if</span> <span class="n">_db_conn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;❌ БД не ініціалізована!&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;❌ Помилка: БД не ініціалізована!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span>
+
+    <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">limit_value</span> <span class="o">=</span> <span class="n">LIMITS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">limit_value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Використовуємо _db_conn напряму</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s1">&#39;SELECT count, last_reset FROM usage &#39;</span>
+            <span class="s1">&#39;WHERE user_id = ? AND model_name = ?&#39;</span><span class="p">,</span> 
+            <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">row</span><span class="p">:</span>
+            <span class="n">count</span><span class="p">,</span> <span class="n">last_reset</span> <span class="o">=</span> <span class="n">row</span>
+            <span class="k">if</span> <span class="n">last_reset</span> <span class="o">!=</span> <span class="n">today</span><span class="p">:</span>
+                <span class="c1"># Новий день -&gt; скидаємо</span>
+                <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                    <span class="s1">&#39;UPDATE usage SET count = 1, last_reset = ? &#39;</span>
+                    <span class="s1">&#39;WHERE user_id = ? AND model_name = ?&#39;</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">today</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Перевірка ліміту</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">limit_value</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">limit_value</span>
+                <span class="c1"># Інкремент</span>
+                <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                    <span class="s1">&#39;UPDATE usage SET count = count + 1 &#39;</span>
+                    <span class="s1">&#39;WHERE user_id = ? AND model_name = ?&#39;</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Новий запис</span>
+            <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s1">&#39;INSERT INTO usage (user_id, model_name, count, last_reset) &#39;</span>
+                <span class="s1">&#39;VALUES (?, ?, 1, ?)&#39;</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">today</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">await</span> <span class="n">_db_conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DB Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
