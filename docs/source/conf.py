@@ -5,7 +5,7 @@ os.environ['OPENAI_API_KEY'] = 'dummy'
 os.environ['TOGETHER_API_KEY'] = 'dummy'
 os.environ['SERPER_API_KEY'] = 'dummy'
 os.environ['PERPLEXITY_API_KEY'] = 'dummy'
-os.environ['BOT_TOKEN'] = 'dummy'
+os.environ['BOT_TOKEN'] = '123456789:AAG_dummy_token_for_sphinx_build_test'
 
 sys.path.insert(0, os.path.abspath('../..'))
 
