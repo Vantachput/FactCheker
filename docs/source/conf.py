@@ -25,6 +25,7 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 # --- i18n (Multilanguage support) ---
+language = 'uk'          # Default language (overridden with -D language=en for EN build)
 locale_dirs = ['../locales/']
 gettext_compact = False
 
