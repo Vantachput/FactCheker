@@ -1,0 +1,314 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utilities &mdash; FactChecker 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Database (SQLite)" href="database.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FactChecker
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main.html">Entry Point (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">AI &amp; Search Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="handlers.html">Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database (SQLite)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#utils.helpers.escape_markdown"><code class="docutils literal notranslate"><span class="pre">escape_markdown()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.helpers.get_progress_bar"><code class="docutils literal notranslate"><span class="pre">get_progress_bar()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.helpers.get_ukraine_time"><code class="docutils literal notranslate"><span class="pre">get_ukraine_time()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.helpers.split_text"><code class="docutils literal notranslate"><span class="pre">split_text()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.logger.log_ai_usage"><code class="docutils literal notranslate"><span class="pre">log_ai_usage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.keyboards.get_back_button"><code class="docutils literal notranslate"><span class="pre">get_back_button()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.keyboards.get_ft_menu"><code class="docutils literal notranslate"><span class="pre">get_ft_menu()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.keyboards.get_main_menu"><code class="docutils literal notranslate"><span class="pre">get_main_menu()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.keyboards.get_pplx_menu"><code class="docutils literal notranslate"><span class="pre">get_pplx_menu()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utils.keyboards.get_settings_menu"><code class="docutils literal notranslate"><span class="pre">get_settings_menu()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FactChecker</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-utils.helpers">
+<span id="utils"></span><h1>Utilities<a class="headerlink" href="#module-utils.helpers" title="Link to this heading"></a></h1>
+<p>Helper utilities for text processing and time handling.</p>
+<p>This module contains pure functions used for formatting responses, splitting text for Telegram, escaping special characters, and working with Ukrainian local time.</p>
+<dl class="simple">
+<dt>Tests (doctest):</dt><dd><p>You can run the tests for this module with: <cite>python -m doctest utils/helpers.py -v</cite></p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.helpers.escape_markdown">
+<span class="sig-prename descclassname"><span class="pre">utils.helpers.</span></span><span class="sig-name descname"><span class="pre">escape_markdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/utils/helpers.html#escape_markdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.helpers.escape_markdown" title="Link to this definition"></a></dt>
+<dd><p>Escapes special Markdown characters for safe sending in Telegram.</p>
+<p>Telegram bots may raise a <cite>ParseError</cite> if a message contains unmatched or incorrectly formatted Markdown characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> (<em>str</em>) – Original text.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Text with escaped <cite>_</cite>, <cite>*</cite>, <cite>[</cite> characters.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">escape_markdown</span><span class="p">(</span><span class="s2">&quot;Текст з _курсивом_ та *жирним* шрифтом [Лінк]&quot;</span><span class="p">)</span>
+<span class="go">&#39;Текст з \\_курсивом\\_ та \\*жирним\\* шрифтом \\[Лінк]&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.helpers.get_progress_bar">
+<span class="sig-prename descclassname"><span class="pre">utils.helpers.</span></span><span class="sig-name descname"><span class="pre">get_progress_bar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/utils/helpers.html#get_progress_bar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.helpers.get_progress_bar" title="Link to this definition"></a></dt>
+<dd><p>Generates a visual AI confidence bar (up to 10 blocks).</p>
+<p>The function searches for a percentage mention in the text (e.g. “85%”) and converts it into a string of emoji squares.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> (<em>str</em>) – Input text from AI containing the confidence percentage.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Formatted string with the bar, or an empty string if no percentage is found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_progress_bar</span><span class="p">(</span><span class="s2">&quot;Впевненість: 87%&quot;</span><span class="p">)</span>
+<span class="go">&#39;\n\n📊 Шкала впевненості ШІ:\n🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 87%&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_progress_bar</span><span class="p">(</span><span class="s2">&quot;Без відсотків&quot;</span><span class="p">)</span>
+<span class="go">&#39;&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.helpers.get_ukraine_time">
+<span class="sig-prename descclassname"><span class="pre">utils.helpers.</span></span><span class="sig-name descname"><span class="pre">get_ukraine_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/utils/helpers.html#get_ukraine_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.helpers.get_ukraine_time" title="Link to this definition"></a></dt>
+<dd><p>Returns the current local time in Ukraine.</p>
+<p>Uses the <cite>Europe/Kyiv</cite> timezone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String in <cite>DD.MM.YYYY HH:MM</cite> format.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.helpers.split_text">
+<span class="sig-prename descclassname"><span class="pre">utils.helpers.</span></span><span class="sig-name descname"><span class="pre">split_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/utils/helpers.html#split_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.helpers.split_text" title="Link to this definition"></a></dt>
+<dd><p>Splits text into chunks of the specified length.</p>
+<p>Telegram limits a single message to 4096 characters. This function reliably splits large text into parts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – Input text to split.</p></li>
+<li><p><strong>max_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum length of a single chunk. Default is 4000.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of text chunks.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">split_text</span><span class="p">(</span><span class="s2">&quot;1234567890&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">[&#39;123&#39;, &#39;456&#39;, &#39;789&#39;, &#39;0&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">split_text</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p id="module-utils.logger">Bot cost analytics and logging system.</p>
+<p><strong>Business Logic (Cost Tracking):</strong> This module records all AI usage statistics. Each request is converted into token counts, then translated into USD using provider pricing (OpenAI, Together). Data is stored in two formats: 1. <cite>bot_usage.log</cite> — plain text log for quick admin review. 2. <cite>usage_analytics.jsonl</cite> — structured JSON Lines file for deep</p>
+<blockquote>
+<div><p>machine analytics or chart generation.</p>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.logger.log_ai_usage">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">utils.logger.</span></span><span class="sig-name descname"><span class="pre">log_ai_usage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Unknown'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils/logger.html#log_ai_usage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.logger.log_ai_usage" title="Link to this definition"></a></dt>
+<dd><p>Universal async logger for collecting token usage and cost statistics.</p>
+<p>The function adapts to different <cite>usage_data</cite> formats (plain dict or Pydantic model from OpenAI/Together). It identifies the model by name and automatically applies the current per-million-token pricing to calculate the final <cite>cost</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – Call method (e.g. <cite>BASE</cite>, <cite>PERPLEXITY</cite>).</p></li>
+<li><p><strong>model_name</strong> (<em>str</em>) – Exact model name (e.g. <cite>gpt-4o-mini</cite>).</p></li>
+<li><p><strong>usage_data</strong> (<em>object</em><em> | </em><em>dict</em>) – Object containing the number of tokens used.</p></li>
+<li><p><strong>user_id</strong> (<em>str</em><em> | </em><em>int</em><em>, </em><em>optional</em>) – Telegram user ID.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p id="module-utils.keyboards">A set of functions for managing bot keyboards.</p>
+<p>This module contains pure functions, each returning an <cite>InlineKeyboardMarkup</cite> object with the appropriate buttons for the Fact-Checker menu.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.keyboards.get_back_button">
+<span class="sig-prename descclassname"><span class="pre">utils.keyboards.</span></span><span class="sig-name descname"><span class="pre">get_back_button</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">InlineKeyboardMarkup</span></span></span><a class="reference internal" href="_modules/utils/keyboards.html#get_back_button"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.keyboards.get_back_button" title="Link to this definition"></a></dt>
+<dd><p>Returns a keyboard with only the ‘Cancel’ button.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Button for cancelling the current action.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>InlineKeyboardMarkup</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.keyboards.get_ft_menu">
+<span class="sig-prename descclassname"><span class="pre">utils.keyboards.</span></span><span class="sig-name descname"><span class="pre">get_ft_menu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">InlineKeyboardMarkup</span></span></span><a class="reference internal" href="_modules/utils/keyboards.html#get_ft_menu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.keyboards.get_ft_menu" title="Link to this definition"></a></dt>
+<dd><p>Returns the Fine-tuned model selection menu.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Buttons for Llama and GPT-4o-mini.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>InlineKeyboardMarkup</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.keyboards.get_main_menu">
+<span class="sig-prename descclassname"><span class="pre">utils.keyboards.</span></span><span class="sig-name descname"><span class="pre">get_main_menu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">InlineKeyboardMarkup</span></span></span><a class="reference internal" href="_modules/utils/keyboards.html#get_main_menu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.keyboards.get_main_menu" title="Link to this definition"></a></dt>
+<dd><p>Returns the main bot menu.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Keyboard with three buttons: Classify, Choose Method, Help.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>InlineKeyboardMarkup</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.keyboards.get_pplx_menu">
+<span class="sig-prename descclassname"><span class="pre">utils.keyboards.</span></span><span class="sig-name descname"><span class="pre">get_pplx_menu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">InlineKeyboardMarkup</span></span></span><a class="reference internal" href="_modules/utils/keyboards.html#get_pplx_menu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.keyboards.get_pplx_menu" title="Link to this definition"></a></dt>
+<dd><p>Returns the Perplexity model selection menu.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Buttons for Sonar, Reasoning, Deep Research.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>InlineKeyboardMarkup</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.keyboards.get_settings_menu">
+<span class="sig-prename descclassname"><span class="pre">utils.keyboards.</span></span><span class="sig-name descname"><span class="pre">get_settings_menu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">InlineKeyboardMarkup</span></span></span><a class="reference internal" href="_modules/utils/keyboards.html#get_settings_menu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.keyboards.get_settings_menu" title="Link to this definition"></a></dt>
+<dd><p>Returns the analysis method category selection menu.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Buttons: Fine-tuning, Web-search, Base.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>InlineKeyboardMarkup</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="database.html" class="btn btn-neutral float-left" title="Database (SQLite)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

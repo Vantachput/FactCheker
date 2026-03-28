@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>handlers.message_handlers &mdash; FactChecker 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FactChecker
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../main.html">Entry Point (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../services.html">AI &amp; Search Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../handlers.html">Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database.html">Database (SQLite)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FactChecker</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">handlers.message_handlers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for handlers.message_handlers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Модуль обробки текстових повідомлень і запитів на перевірку.</span>
+
+<span class="sd">**Бізнес-логіка (Механізм перевірки та Fallback):**</span>
+<span class="sd">Коли користувач надсилає новину (прямим текстом або пересилає повідомлення),</span>
+<span class="sd">цей модуль виконує наступне:</span>
+<span class="sd">1. Парсить джерело (чи репост це з каналу/групи).</span>
+<span class="sd">2. Записує стан користувача (перевіряє ліміти).</span>
+<span class="sd">3. Якщо метод - `base`, спочатку генерується розумний запит. Якщо розумний запит </span>
+<span class="sd">   не дає результатів у Google (наприклад, фейк дуже абстрактний), спрацьовує </span>
+<span class="sd">   **Fallback-алгоритм**: береться прямий текст новини (перші слова) і </span>
+<span class="sd">   надсилається в Google, щоб знайти хоч якісь спростування.</span>
+<span class="sd">4. Розбиває великі відповіді (понад 4000 символів) на частини через `send_smart_reply`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">telegram</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinkPreviewOptions</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">database.db_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_and_increment_limit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">services.ai_service</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">call_base_gpt</span><span class="p">,</span>
+    <span class="n">call_openai_ft</span><span class="p">,</span>
+    <span class="n">call_perplexity</span><span class="p">,</span>
+    <span class="n">call_together</span><span class="p">,</span>
+    <span class="n">generate_search_query</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">services.search_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_sources</span><span class="p">,</span> <span class="n">serper_search</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_progress_bar</span><span class="p">,</span> <span class="n">split_text</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.keyboards</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_main_menu</span>
+
+
+<div class="viewcode-block" id="send_smart_reply">
+<a class="viewcode-back" href="../../handlers.html#handlers.message_handlers.send_smart_reply">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_smart_reply</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status_msg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Відправляє великі повідомлення частинами.</span>
+<span class="sd">    </span>
+<span class="sd">    Оскільки Telegram обмежує розмір одного повідомлення 4096 символами, </span>
+<span class="sd">    ця функція розбиває текст на фрагменти, гарантуючи, що прев&#39;ю посилання</span>
+<span class="sd">    (LinkPreview) з&#39;явиться лише на першому повідомленні (щоб не спамити).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        update: Запит оновлення.</span>
+<span class="sd">        text (str): Великий текст для відправки.</span>
+<span class="sd">        status_msg (optional): Повідомлення зі статусом (&quot;Аналізую...&quot;), </span>
+<span class="sd">                               яке буде замінено на результат. Якщо None, </span>
+<span class="sd">                               надсилається як Reply.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">MAX_LEN</span> <span class="o">=</span> <span class="mi">4000</span>
+    
+    <span class="c1"># Налаштування для відображення посилання (фрейму)</span>
+    <span class="c1"># prefer_large_media=True зробить ту саму велику картинку, якщо вона є на сайті</span>
+    <span class="n">link_preview_cfg</span> <span class="o">=</span> <span class="n">LinkPreviewOptions</span><span class="p">(</span>
+        <span class="n">is_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">prefer_large_media</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+        <span class="n">show_above_text</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">MAX_LEN</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;⚖️ **Результат:**</span><span class="se">\n\n</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">status_msg</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                <span class="n">content</span><span class="p">,</span> 
+                <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span> 
+                <span class="n">link_preview_options</span><span class="o">=</span><span class="n">link_preview_cfg</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span>
+                <span class="n">content</span><span class="p">,</span> 
+                <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span> 
+                <span class="n">link_preview_options</span><span class="o">=</span><span class="n">link_preview_cfg</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">split_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        
+        <span class="c1"># Для першої частини вмикаємо прев&#39;ю</span>
+        <span class="n">first_part</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;⚖️ **Результат (Ч. 1):**</span><span class="se">\n\n</span><span class="si">{</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">status_msg</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                <span class="n">first_part</span><span class="p">,</span> 
+                <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span> 
+                <span class="n">link_preview_options</span><span class="o">=</span><span class="n">link_preview_cfg</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span>
+                <span class="n">first_part</span><span class="p">,</span> 
+                <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span> 
+                <span class="n">link_preview_options</span><span class="o">=</span><span class="n">link_preview_cfg</span>
+            <span class="p">)</span>
+            
+        <span class="c1"># Для наступних частин вимикаємо прев&#39;ю, щоб не спамити фреймами</span>
+        <span class="n">no_preview</span> <span class="o">=</span> <span class="n">LinkPreviewOptions</span><span class="p">(</span><span class="n">is_disabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">part</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">await</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;⚖️ **Результат (Ч. </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">):**</span><span class="se">\n\n</span><span class="si">{</span><span class="n">part</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
+                <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span>
+                <span class="n">link_preview_options</span><span class="o">=</span><span class="n">no_preview</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="handle_message">
+<a class="viewcode-back" href="../../handlers.html#handlers.message_handlers.handle_message">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_message</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">user_states</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Головний обробник контенту (новин) від користувачів.</span>
+<span class="sd">    </span>
+<span class="sd">    Перевіряє, чи знаходиться користувач в стані `WAITING` (тобто натиснув </span>
+<span class="sd">    &quot;Класифікувати новину&quot;). Якщо так, витягує текст або підпис до медіа, </span>
+<span class="sd">    визначає джерело репосту, надсилає запит через обраний метод AI </span>
+<span class="sd">    (Together, OpenAI, Serper, Perplexity) та повертає результат.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        update: Запит оновлення від клієнта (містить повідомлення).</span>
+<span class="sd">        context: Контекст бота від telegram.ext.</span>
+<span class="sd">        user_states (dict): Стан користувача.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">uid</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">effective_user</span><span class="o">.</span><span class="n">id</span>
+    
+    <span class="n">state</span> <span class="o">=</span> <span class="n">user_states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="p">{})</span>
+    
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;WAITING&quot;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># 1. Універсальне отримання тексту</span>
+            <span class="c1"># Важливо: використовуємо getattr, щоб уникнути помилок, </span>
+            <span class="c1"># якщо message чомусь порожній</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span>
+            <span class="n">raw_text</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">text</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">caption</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            
+            <span class="c1"># 2. Визначення джерела (репост чи ні) з перевірками на None</span>
+            <span class="n">claim</span> <span class="o">=</span> <span class="n">raw_text</span>
+            <span class="n">origin</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">forward_origin</span>
+            <span class="k">if</span> <span class="n">origin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">origin</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;channel&quot;</span><span class="p">:</span>
+                    <span class="c1"># Репост із каналу</span>
+                    <span class="n">source</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">title</span> <span class="ow">or</span> <span class="n">origin</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">username</span> <span class="ow">or</span> <span class="s2">&quot;Канал&quot;</span>
+                    <span class="n">claim</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Новина з джерела (</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">raw_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">elif</span> <span class="n">origin</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;hidden_user&quot;</span><span class="p">:</span>
+                    <span class="c1"># Репост від користувача, який приховав профіль</span>
+                    <span class="n">claim</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Переслана новина від </span><span class="si">{</span><span class="n">origin</span><span class="o">.</span><span class="n">sender_user_name</span><span class="si">}</span><span class="s2">: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">raw_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">origin</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span>
+                    <span class="c1"># Репост від конкретного користувача</span>
+                    <span class="n">source</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="n">sender_user</span><span class="o">.</span><span class="n">first_name</span> <span class="ow">or</span> <span class="s2">&quot;Користувач&quot;</span>
+                    <span class="n">claim</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Переслана новина від </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">raw_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">elif</span> <span class="n">origin</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;chat&quot;</span><span class="p">:</span>
+                    <span class="c1"># Репост із групи</span>
+                    <span class="n">source</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="n">sender_chat</span><span class="o">.</span><span class="n">title</span> <span class="ow">or</span> <span class="s2">&quot;Група&quot;</span>
+                    <span class="n">claim</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Переслана новина з (</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">raw_text</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># 3. Перевірка на порожній текст</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">claim</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;❌ Помилка: Повідомлення не містить тексту.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">method</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Безпечне отримання ADMIN_ID</span>
+            <span class="n">admin_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ADMIN_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+            <span class="n">admin_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">admin_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">admin_str</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="mi">0</span>
+            
+            <span class="c1"># 4. Надсилаємо статус (Тут ми дізнаємось, чи працює відправка)</span>
+            <span class="n">status_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⏳ Аналізую через </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+            <span class="c1"># --- ПОЧАТОК АНАЛІЗУ ---</span>
+            <span class="n">allowed</span><span class="p">,</span> <span class="n">l_val</span> <span class="o">=</span> <span class="k">await</span> <span class="n">check_and_increment_limit</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">admin_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;🚫 Ліміт вичерпано. Для цього методу доступно &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">l_val</span><span class="si">}</span><span class="s2"> запитів на день.&quot;</span><span class="p">,</span> 
+                    <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">res</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;together&quot;</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_together</span><span class="p">(</span><span class="n">claim</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_TOGETHER_FT&quot;</span><span class="p">),</span> <span class="n">uid</span><span class="p">)</span>
+                <span class="n">res</span> <span class="o">+=</span> <span class="n">get_progress_bar</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;openai_ft&quot;</span><span class="p">:</span>
+                <span class="n">model_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_GPT_4_1_mini&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">model_id</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="s2">&quot;⚠️ Помилка: ID моделі не знайдено в .env&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_openai_ft</span><span class="p">(</span><span class="n">claim</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="n">get_progress_bar</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
+                <span class="c1"># 1. Спроба знайти подію за &quot;розумним&quot; запитом</span>
+                <span class="n">search_query</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_search_query</span><span class="p">(</span><span class="n">claim</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attempt 1 Query: </span><span class="si">{</span><span class="n">search_query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Для дебагу</span>
+                
+                <span class="n">raw</span> <span class="o">=</span> <span class="k">await</span> <span class="n">serper_search</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SERPER_API_KEY&quot;</span><span class="p">))</span>
+                
+                <span class="c1"># 2. УНІВЕРСАЛЬНИЙ FALLBACK:</span>
+                <span class="c1"># Якщо результатів 0, значить запит був занадто розумним </span>
+                <span class="c1"># або події не існує.</span>
+                <span class="c1"># Спробуємо знайти хоча б згадку джерела або ключових імен.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attempt 1 failed. Trying broad search...&quot;</span><span class="p">)</span>
+                    <span class="c1"># Простий алгоритм: беремо перші 30 слів тексту, </span>
+                    <span class="c1"># щоб Google сам розібрався</span>
+                    <span class="n">fallback_query</span> <span class="o">=</span> <span class="n">claim</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span>
+                    <span class="n">raw</span> <span class="o">=</span> <span class="k">await</span> <span class="n">serper_search</span><span class="p">(</span>
+                        <span class="n">fallback_query</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SERPER_API_KEY&quot;</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="n">verified</span><span class="p">,</span> <span class="n">unverified</span> <span class="o">=</span> <span class="n">filter_sources</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_base_gpt</span><span class="p">(</span>
+                    <span class="n">claim</span><span class="p">,</span> <span class="n">verified</span><span class="p">,</span> <span class="n">unverified</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">),</span> <span class="n">uid</span>
+                <span class="p">)</span>
+            
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Perplexity</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_perplexity</span><span class="p">(</span>
+                    <span class="n">claim</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PERPLEXITY_API_KEY&quot;</span><span class="p">),</span> <span class="n">uid</span>
+                <span class="p">)</span>
+
+            <span class="k">await</span> <span class="n">send_smart_reply</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">status_msg</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span>
+                <span class="n">chat_id</span><span class="o">=</span><span class="n">uid</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="s2">&quot;✅ Аналіз завершено. Оберіть наступну дію:&quot;</span><span class="p">,</span>
+                <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Це зловить будь-яку помилку (наприклад, Markdown або API)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;КРИТИЧНА ПОМИЛКА: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;status_msg&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;❌ Помилка: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
+                    <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;❌ Сталася помилка: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
+                    <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
+                <span class="p">)</span>
+        
+        <span class="c1"># Скидаємо стан тільки після завершення (або помилки)</span>
+        <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span>
+            <span class="s2">&quot;Оберіть дію в меню.&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

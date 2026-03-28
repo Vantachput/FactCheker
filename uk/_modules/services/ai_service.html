@@ -1,0 +1,573 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>services.ai_service &mdash; FactChecker 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FactChecker
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../main.html">Entry Point (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../services.html">AI &amp; Search Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../handlers.html">Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database.html">Database (SQLite)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FactChecker</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">services.ai_service</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for services.ai_service</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Ядро системи штучного інтелекту: взаємодія з LLM провайдерами.</span>
+
+<span class="sd">**Архітектурне рішення:**</span>
+<span class="sd">Модуль абстрагує роботу з трьома різними AI-провайдерами:</span>
+<span class="sd">1. OpenAI (для генерації пошукових запитів та аналізу через базові моделі).</span>
+<span class="sd">2. Together AI (для швидкого запуску fine-tuned Llama/Містраль моделей).</span>
+<span class="sd">3. Perplexity API (для інтерактивного ріал-тайм пошуку та deep research).</span>
+
+<span class="sd">**Бізнес-логіка (Промптинг та конвеєр):**</span>
+<span class="sd">- Функція `generate_search_query` перетворює емоційний запит користувача на</span>
+<span class="sd">  фактичний пошуковий запит (наприклад &#39;Зеленський заборонив дихати&#39; -&gt; &#39;Зеленський наказ заборона&#39;).</span>
+<span class="sd">- Базові GPT моделі (`call_base_gpt`) отримують у контекст уже відфільтровані </span>
+<span class="sd">  джерела (`verified` vs `unverified`), що змушує AI спиратися лише на надійні дані</span>
+<span class="sd">  (RAG - Retrieval-Augmented Generation).</span>
+<span class="sd">- Моделі сімейства `sonar` (Perplexity) використовують власні інструменти пошуку.</span>
+<span class="sd">  Для них налаштовано жорсткі системні промпти, щоб унеможливити використання </span>
+<span class="sd">  англійської мови та змусити ІХ дотримуватися журналістських стандартів.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">aiohttp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncOpenAI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">together</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncTogether</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ukraine_time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_ai_usage</span>
+
+<span class="n">today</span> <span class="o">=</span> <span class="n">get_ukraine_time</span><span class="p">()</span>
+<span class="n">_ai_session</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">openai_client</span> <span class="o">=</span> <span class="n">AsyncOpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">))</span>
+<span class="n">together_client</span> <span class="o">=</span> <span class="n">AsyncTogether</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TOGETHER_API_KEY&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">today</span><span class="p">)</span>
+
+<div class="viewcode-block" id="generate_search_query">
+<a class="viewcode-back" href="../../services.html#services.ai_service.generate_search_query">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_search_query</span><span class="p">(</span><span class="n">user_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Генерує оптимізований пошуковий запит з тексту користувача.</span>
+<span class="sd">    </span>
+<span class="sd">    Алгоритм &quot;Search Query Architect&quot; видаляє емоційні забарвлення, прикметники</span>
+<span class="sd">    та конкретні (потенційно фейкові) деталі, залишаючи лише &quot;якірні факти&quot; </span>
+<span class="sd">    (Anchor Facts: дати, локації, власні назви).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user_text (str): Оригінальне повідомлення від користувача.</span>
+<span class="sd">        model_id (str, optional): Модель для генерації. За замовчуванням &quot;gpt-4o-mini&quot;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Короткий пошуковий запит (4-7 слів українською мовою). Якщо виникне </span>
+<span class="sd">            помилка, повертає перші 100 символів оригінального тексту.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;You are a Search Query Architect. Your goal is to find the REAL event &quot;</span>
+        <span class="s2">&quot;behind a potentially distorted user claim.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;To do this, you must strip away adjectives, emotions, and specific &quot;</span>
+        <span class="s2">&quot;objects that might be fake, keeping only the &#39;Anchor Facts&#39;.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;ALGORITHM:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;1. Identify ANCHORS (Keep these): Dates, Locations, Proper Names &quot;</span>
+        <span class="s2">&quot;(People, Organizations), Source Names (e.g., &#39;BBC&#39;, &#39;Glagola&#39;).</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;2. Identify VARIABLES (Generalize these): </span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;   - Instead of specific numbers (e.g., &#39;30000 uah&#39;), use &#39;payment&#39; &quot;</span>
+        <span class="s2">&quot;or &#39;money&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;   - Instead of specific vehicles (e.g., &#39;F-16&#39;, &#39;tank&#39;), use &quot;</span>
+        <span class="s2">&quot;&#39;transport&#39; or &#39;accident&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;   - Instead of specific crime details, use general terms like &quot;</span>
+        <span class="s2">&quot;&#39;scandal&#39; or &#39;crime&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;3. Construct a query of 4-7 keywords.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;EXAMPLES:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;User: &#39;Zelensky signed order #555 to ban men from breathing&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Query: Zelensky order ban men (We removed the specific fake number &quot;</span>
+        <span class="s2">&quot;#555)</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;User: &#39;In Kyiv, a T-72 tank exploded near McDonald&#39;s&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Query: Kyiv explosion McDonald&#39;s (We removed &#39;T-72 tank&#39; as it might &quot;</span>
+        <span class="s2">&quot;be a car)</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;OUTPUT: Single search query in the target language (Ukrainian).&quot;</span>
+    <span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_prompt</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_text</span><span class="p">[:</span><span class="mi">1000</span><span class="p">]}</span>
+            <span class="p">],</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.1</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">query</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">user_text</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_ai_session">
+<a class="viewcode-back" href="../../services.html#services.ai_service.get_ai_session">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_ai_session</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Повертає або створює глобальну aiohttp сесію для AI-запитів.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        aiohttp.ClientSession: Активна сесія для виконання HTTP-запитів.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_ai_session</span>
+    <span class="k">if</span> <span class="n">_ai_session</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">_ai_session</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+        <span class="n">_ai_session</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_ai_session</span></div>
+
+
+<div class="viewcode-block" id="call_together">
+<a class="viewcode-back" href="../../services.html#services.ai_service.call_together">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_together</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">uid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Together AI (зазвичай для локально натренованих моделей).</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        claim (str): Текст повідомлення/новини для перевірки.</span>
+<span class="sd">        model_id (str): ID моделі на платформі Together.</span>
+<span class="sd">        uid (int): ID користувача для логування використання.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Відповідь моделі (вердикт та аналіз).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">together_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> 
+        <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> 
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Ти аналітик новин. Визнач, чи є надана новина &quot;</span>
+                           <span class="s2">&quot;правдивою чи фейковою.&quot;</span>
+            <span class="p">},</span> 
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Текст новини: : </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+        <span class="p">],</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.1</span> 
+    <span class="p">)</span>
+
+    <span class="c1"># ДОДАЄМО ЛОГУВАННЯ</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s1">&#39;usage&#39;</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span><span class="s2">&quot;TOGETHER&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span></div>
+
+
+<div class="viewcode-block" id="call_openai_ft">
+<a class="viewcode-back" href="../../services.html#services.ai_service.call_openai_ft">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_openai_ft</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Fine-Tuned (додатково натренованої) моделі OpenAI.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        claim (str): Текст новин для перевірки.</span>
+<span class="sd">        model_id (str): ID fine-Tuned моделі (наприклад `ft:gpt-4o-mini...`).</span>
+<span class="sd">        user_id (int): ID користувача для логування витрат.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Повернутий моделлю вердикт.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Ти професійний аналітик новин. Оціни ймовірність правдивості новини у &quot;</span>
+        <span class="s2">&quot;відсотках (0-100%) та надай коротке обґрунтування вердикту.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+        <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_instr</span><span class="p">},</span> 
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Текст новини: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+        <span class="p">],</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s1">&#39;usage&#39;</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span><span class="s2">&quot;OPENAI_FT&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span></div>
+
+
+<div class="viewcode-block" id="call_base_gpt">
+<a class="viewcode-back" href="../../services.html#services.ai_service.call_base_gpt">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_base_gpt</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">verified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">unverified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує новину за допомогою базових моделей OpenAI із наданням контексту (RAG).</span>
+<span class="sd">    </span>
+<span class="sd">    Реалізує логіку:</span>
+<span class="sd">    1. Передає масиви &quot;Довірених&quot; і &quot;Неперевірених&quot; джерел.</span>
+<span class="sd">    2. Змушує AI порівнювати факти та шукати консенсус між джерелами.</span>
+<span class="sd">    3. Визначає підсумковий вердикт (ПРАВДА, МАНІПУЛЯЦІЯ, ФЕЙК, НЕПІДТВЕРДЖЕНО) </span>
+<span class="sd">       на основі матриці логіки (Logic Matrix).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        claim (str): Твердження користувача.</span>
+<span class="sd">        verified_srcs (list[str]): Рядки з офіційних та перевірених сайтів (A+, A, B списки).</span>
+<span class="sd">        unverified_srcs (list[str]): Інші джерела з Інтернету.</span>
+<span class="sd">        model_id (str): Обрана базова модель OpenAI (наприклад `gpt-4o`).</span>
+<span class="sd">        user_id (int): ID користувача для статистики.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Детальний аналіз та вердикт в Markdown форматі.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Складаємо контекст із двох рівнів довіри</span>
+    <span class="n">context_text</span> <span class="o">=</span> <span class="s2">&quot;--- VERIFIED SOURCES (Trusted/Official):</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">verified_srcs</span><span class="p">:</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">verified_srcs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;No official or high-trust sources found.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    
+    <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- GENERAL WEB SOURCES (Unverified/Contextual):</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">unverified_srcs</span><span class="p">:</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unverified_srcs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;No additional web mentions found.&quot;</span>
+
+    <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;ROLE: You are an elite Ukrainian Fact-Checker Bot.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;CURRENT DATE: </span><span class="si">{</span><span class="n">today</span><span class="si">}</span><span class="s2">.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;INPUT DATA:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;1. User Claim: The statement you need to verify.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;2. Search Context: Snippets from Google Search results &quot;</span>
+        <span class="s2">&quot;(split into Trusted vs General).</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;METHODOLOGY:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Analyze the snippets carefully. Even short snippets often contain &quot;</span>
+        <span class="s2">&quot;the verdict (e.g., &#39;Fake news&#39;, &#39;Debunked&#39;, or official statements).</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Prioritize &#39;Trusted Sources&#39;. If Ukrinform or BBC says X, and a &quot;</span>
+        <span class="s2">&quot;random blog says Y, trust X.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Look for consensus. If 5 sources say the same thing, it&#39;s likely &quot;</span>
+        <span class="s2">&quot;true.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- If trusted sources mention the claim is a &#39;fake&#39; or &#39;IPSO&#39; &quot;</span>
+        <span class="s2">&quot;(propaganda), label it as [ФЕЙК].</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;LOGIC MATRIX (Apply strict priority):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;1. FULL MATCH -&gt; [ПРАВДА] (Dates, Names, Details match).</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;2. PARTIAL MATCH -&gt; [МАНІПУЛЯЦІЯ] (The core event happened at this &quot;</span>
+        <span class="s2">&quot;place/time, BUT details are distorted. E.g., User says &#39;Tank&#39;, News &quot;</span>
+        <span class="s2">&quot;says &#39;Car&#39;. User says &#39;Died&#39;, News says &#39;Injured&#39;).</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;3. NO EVENT -&gt; [ФЕЙК] (No mentions of such event at this location/date &quot;</span>
+        <span class="s2">&quot;found in trusted sources, or sources explicitly debunk it).</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;4. NO DATA -&gt; [НЕПІДТВЕРДЖЕНО] (Search yielded zero relevant results).</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        
+        <span class="s2">&quot;RESPONSE FORMAT (Strict Markdown):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;**Вердикт:** [Category]</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;**Аналіз:**</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;(Short explanation citing specific sources from the context. Do not &quot;</span>
+        <span class="s2">&quot;invent links. &quot;</span>
+        <span class="s2">&quot;Refer to sources by name, e.g., &#39;За даними Укрінформ...&#39;).&quot;</span>
+
+        <span class="s2">&quot;RESPONSE STRUCTURE:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Start with the most reliable source link to enable Telegram Preview. &quot;</span>
+        <span class="s2">&quot;Format: [🔗 Джерело] (URL)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Then add two new lines.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;- Then provide the [VERDICT] and analysis.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">context_text</span><span class="p">)</span>
+
+    <span class="c1"># Налаштування для звичайних моделей</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_id</span><span class="p">,</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_instr</span><span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> 
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Claim to verify: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Context Data:</span><span class="se">\n</span><span class="si">{</span><span class="n">context_text</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Вимикаємо температуру для моделей, які її не підтримують</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">x</span> <span class="ow">in</span> <span class="n">model_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span> <span class="s2">&quot;o1&quot;</span><span class="p">,</span> <span class="s2">&quot;o3&quot;</span><span class="p">,</span> <span class="s2">&quot;search-preview&quot;</span><span class="p">]):</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+    <span class="c1"># 1. Отримуємо повну відповідь</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s1">&#39;usage&#39;</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span><span class="s2">&quot;BASE&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span></div>
+
+
+<div class="viewcode-block" id="call_perplexity">
+<a class="viewcode-back" href="../../services.html#services.ai_service.call_perplexity">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_perplexity</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Викликає моделі серії Sonar (Perplexity) напряму через REST API.</span>
+<span class="sd">    </span>
+<span class="sd">    В залежності від `method` (deep-research, reasoning-pro, sonar-huge), </span>
+<span class="sd">    настроює різні системні промпти, температуру, тайм-аути та ліміти токенів.</span>
+<span class="sd">    Цей сервіс має власний пошуковий рушій, тому йому не потрібен пошук Serper.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        claim (str): Текст для перевірки.</span>
+<span class="sd">        method (str): Внутрішня назва моделі (наприклад `sonar-deep-research`).</span>
+<span class="sd">        api_key (str): Ключ доступу до сервісу.</span>
+<span class="sd">        user_id (int): ID користувача для логування витрат.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Згенерована відповідь з оцінкою правдивості твердження.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+    
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;sonar-deep-research&quot;</span><span class="p">:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="mf">0.3</span> 
+        <span class="n">freq_pen</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;ROLE: Senior Fact-Checking Detective.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;LANGUAGE: You MUST process information in any language but output &quot;</span>
+            <span class="s2">&quot;ONLY in UKRAINIAN.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;SYSTEM CONTEXT: The current local time in Ukraine is </span><span class="si">{</span><span class="n">today</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;All time-sensitive analysis MUST be based on THIS date.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Do not use any other internal system dates.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Strictly ignore the language of the search results and write &quot;</span>
+            <span class="s2">&quot;exclusively in Ukrainian.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;LINGUISTIC INSTRUCTIONS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Use natural, high-quality Ukrainian (literary style).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Avoid English-style sentence structures. Adapt the meaning, &quot;</span>
+            <span class="s2">&quot;don&#39;t just translate word-for-word.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Use active voice where possible and proper Ukrainian &quot;</span>
+            <span class="s2">&quot;terminology.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Ensure all terms are correctly declined (proper grammatical &quot;</span>
+            <span class="s2">&quot;cases).</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;RESPONSE STRUCTURE:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. VERDICT: Start with one of these: ✅ ПРАВДА, ❌ ФЕЙК, &quot;</span>
+            <span class="s2">&quot;⚠️ МАНІПУЛЯЦІЯ, or 🔍 НЕМОЖЛИВО ВСТАНОВИТИ.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. ADDRESSING: Write exactly: &#39;Ми провели глибокий аналіз, і ось &quot;</span>
+            <span class="s2">&quot;що вдалося знайти...&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;3. BODY: Use these three sections with emojis:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - 📌 Контекст (The background of the claim)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - 🛡️ Докази (Evidence gathered)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - 🏁 Висновок (Final summary)</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;STRICT CONSTRAINTS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- NO ENGLISH: Not a single word in English in the final response.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- NO CITATIONS: Absolutely NO links, URLS, or bracketed numbers &quot;</span>
+            <span class="s2">&quot;like [1], [2], [3].</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- CONCISENESS: Be brief and professional. Avoid long-winded &quot;</span>
+            <span class="s2">&quot;essays.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- LENGTH: Total response must be under 5000 characters.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">current_timeout</span> <span class="o">=</span> <span class="mi">300</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;sonar-reasoning-pro&quot;</span><span class="p">:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="mf">0.1</span> 
+        <span class="n">freq_pen</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;SYSTEM CONTEXT:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;The current local time in Ukraine is </span><span class="si">{</span><span class="n">today</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;All time-sensitive analysis MUST be based strictly on this date. &quot;</span>
+
+            <span class="s2">&quot;ROLE:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;You are an expert fact-checking analyst specializing in logical &quot;</span>
+            <span class="s2">&quot;analysis, manipulation detection, and critical reasoning.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+            <span class="s2">&quot;LANGUAGE REQUIREMENTS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Output ONLY in high-quality, formal Ukrainian.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Use natural Ukrainian syntax and professional journalistic style.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Avoid calques or English-style phrasing.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+            <span class="s2">&quot;SEARCH &amp; EVIDENCE REQUIREMENTS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Perform a real-time search to verify the claim against current &quot;</span>
+            <span class="s2">&quot;facts.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Prioritize credible Ukrainian sources, specifically official .ua &quot;</span>
+            <span class="s2">&quot;domains, Suspilne, Ukrinform, BBC News Ukraine, and specialized &quot;</span>
+            <span class="s2">&quot;fact-checking projects like StopFake.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- For every fact or piece of evidence found, provide a direct &quot;</span>
+            <span class="s2">&quot;source link in parentheses.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- If no reliable information is found online, explicitly state &quot;</span>
+            <span class="s2">&quot;that the claim lacks empirical confirmation.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;RESPONSE STRUCTURE (MANDATORY):</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. ВЕРДИКТ — start the response with exactly ONE of the following &quot;</span>
+            <span class="s2">&quot;labels:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   ✅ ПРАВДА</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   ❌ ФЕЙК</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   ⚠️ МАНІПУЛЯЦІЯ</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   🔍 НЕМОЖЛИВО ВСТАНОВИТИ</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. АНАЛІЗ — a concise, logically structured explanation that:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- explicitly refers to the internal logic of the claim;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- identifies specific logical fallacies or manipulation &quot;</span>
+            <span class="s2">&quot;techniques (if present);</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- avoids speculation or assumptions beyond the given text.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+            <span class="s2">&quot;STRICT CONSTRAINTS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- DO NOT cite sources, links, footnotes, or external references.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- DO NOT introduce new factual information that is not present in &quot;</span>
+            <span class="s2">&quot;the claim.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- DO NOT soften conclusions with uncertainty phrases unless the &quot;</span>
+            <span class="s2">&quot;verdict is 🔍 НЕМОЖЛИВО ВСТАНОВИТИ.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Maintain an analytical, neutral, and professional tone.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">current_timeout</span> <span class="o">=</span> <span class="mi">180</span>
+
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">temp</span> <span class="o">=</span> <span class="mf">0.6</span> 
+        <span class="n">freq_pen</span> <span class="o">=</span> <span class="mf">0.4</span>
+        <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;SYSTEM CONTEXT: Current date: </span><span class="si">{</span><span class="n">today</span><span class="si">}</span><span class="s2"> (Kyiv time). Use this for &quot;</span>
+            <span class="s2">&quot;all timeliness checks.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;ROLE: You are an elite Ukrainian Investigative Journalist and &quot;</span>
+            <span class="s2">&quot;Fact-Checker.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Your goal is to verify the ESSENCE of the event, not just the &quot;</span>
+            <span class="s2">&quot;exact wording of the user&#39;s claim.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            
+            <span class="s2">&quot;SEARCH STRATEGY (INTERNAL):</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. Extract key entities (names, places, dates) from the user&#39;s &quot;</span>
+            <span class="s2">&quot;claim.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. Search for these specific events in reputable media.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;3. If the user&#39;s wording is emotional but the event happened -&gt; &quot;</span>
+            <span class="s2">&quot;Verdict: TRUE or MANIPULATION.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;4. Only use FAKE if the event did not happen at all or is a &quot;</span>
+            <span class="s2">&quot;complete fabrication.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+            <span class="s2">&quot;OUTPUT FORMAT (STRICTLY UKRAINIAN):</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. VERDICT: Choose one: [✅ ПРАВДА], [❌ ФЕЙК], [⚠️ МАНІПУЛЯЦІЯ], &quot;</span>
+            <span class="s2">&quot;[🔍 НЕМОЖЛИВО ВСТАНОВИТИ].</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. EXPLANATION: A cohesive, flowing narrative explanation (2-3 &quot;</span>
+            <span class="s2">&quot;paragraphs).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - Describe what actually happened according to official &quot;</span>
+            <span class="s2">&quot;sources.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - Compare it with the user&#39;s claim.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;   - Mention specific dates and names found during the search.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+            <span class="s2">&quot;CRITICAL CONSTRAINTS:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- NO CITATION TAGS: Do not include [1], [2], (1) or any source &quot;</span>
+            <span class="s2">&quot;indexes. The text must be clean.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- NO LINKS: Do not output URLs.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- TONE: Professional, objective, journalistic Ukrainian. Avoid &quot;</span>
+            <span class="s2">&quot;translationese.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;- Do NOT simply say &#39;no information found&#39; immediately. Try &quot;</span>
+            <span class="s2">&quot;different search angles first.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">current_timeout</span> <span class="o">=</span> <span class="mi">120</span>
+
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> 
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_instr</span><span class="p">},</span> 
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">claim</span><span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="mi">3000</span> <span class="k">if</span> <span class="s2">&quot;deep&quot;</span> <span class="ow">in</span> <span class="n">method</span> <span class="k">else</span> <span class="mi">1500</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">temp</span><span class="p">,</span>
+        <span class="s2">&quot;frequency_penalty&quot;</span><span class="p">:</span> <span class="n">freq_pen</span>
+    <span class="p">}</span>
+
+    <span class="n">session</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_ai_session</span><span class="p">()</span> <span class="c1"># Отримуємо спільну сесію</span>
+
+    <span class="k">try</span><span class="p">:</span>
+            <span class="n">timeout_config</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientTimeout</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">current_timeout</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="s2">&quot;https://api.perplexity.ai/chat/completions&quot;</span><span class="p">,</span> 
+                <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> 
+                <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span> 
+                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout_config</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+                
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span>
+                        <span class="s2">&quot;PERPLEXITY&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;usage&#39;</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">user_id</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;choices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;message&#39;</span><span class="p">][</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;❌ Помилка API: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;❌ Помилка з&#39;єднання: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

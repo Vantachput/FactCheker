@@ -1,0 +1,223 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>main &mdash; FactChecker 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            FactChecker
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Entry Point (main)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../services.html">AI &amp; Search Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../handlers.html">Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../database.html">Database (SQLite)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FactChecker</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">main</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Головний модуль Telegram-бота для перевірки фактів.</span>
+
+<span class="sd">Цей модуль відповідає за ініціалізацію Telegram-застосунку, налаштування </span>
+<span class="sd">обробників повідомлень та команд, а також життєвий цикл роботи бота, </span>
+<span class="sd">включно з коректним завершенням (graceful shutdown).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">telegram.ext</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">,</span>
+    <span class="n">CallbackQueryHandler</span><span class="p">,</span>
+    <span class="n">CommandHandler</span><span class="p">,</span>
+    <span class="n">MessageHandler</span><span class="p">,</span>
+    <span class="n">filters</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">database.db_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">close_db</span><span class="p">,</span> <span class="n">init_db</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">handlers.callback_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle_callback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">handlers.command_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">start</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">handlers.message_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle_message</span>
+
+<span class="n">load_dotenv</span><span class="p">()</span>
+<span class="n">user_states</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="start_wrapper">
+<a class="viewcode-back" href="../main.html#main.start_wrapper">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_wrapper</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Обгортка для обробника команди /start.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        u (telegram.Update): Запит оновлення від Telegram.</span>
+<span class="sd">        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">start</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">user_states</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="callback_wrapper">
+<a class="viewcode-back" href="../main.html#main.callback_wrapper">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">callback_wrapper</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Обгортка для обробника callback-запитів.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        u (telegram.Update): Запит оновлення від Telegram.</span>
+<span class="sd">        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">handle_callback</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">user_states</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="message_wrapper">
+<a class="viewcode-back" href="../main.html#main.message_wrapper">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">message_wrapper</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Обгортка для обробника текстових повідомлень.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        u (telegram.Update): Запит оновлення від Telegram.</span>
+<span class="sd">        c (telegram.ext.ContextTypes.DEFAULT_TYPE): Контекст бота.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">handle_message</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">user_states</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../main.html#main.main">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Основна функція запуску бота та ініціалізації ресурсів.</span>
+<span class="sd">    </span>
+<span class="sd">    Створює підключення до бази даних, збирає ApplicationBuilder </span>
+<span class="sd">    від бібліотеки python-telegram-bot, реєструє обробники повідомлень </span>
+<span class="sd">    (routers) і запускає цикл (polling). При зупинці коректно закриває</span>
+<span class="sd">    всі з&#39;єднання з AI сесіям та БД.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">await</span> <span class="n">init_db</span><span class="p">()</span>
+
+    <span class="n">app</span> <span class="o">=</span> <span class="n">ApplicationBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">token</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BOT_TOKEN&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+    
+    <span class="n">app</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CommandHandler</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">start_wrapper</span><span class="p">))</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CallbackQueryHandler</span><span class="p">(</span><span class="n">callback_wrapper</span><span class="p">))</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">MessageHandler</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">ALL</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">filters</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span> <span class="n">message_wrapper</span><span class="p">))</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🚀 Бот запущений асинхронно...&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 3. Запуск через контекстний менеджер (найбільш стабільний варіант)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">app</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">updater</span><span class="o">.</span><span class="n">start_polling</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Чекаємо нескінченно, поки не натиснуть Ctrl+C</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="c1"># Це виключення виникає при зупинці asyncio.run</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⏳ Зупинка процесів...&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># 1. Зупиняємо Telegram процеси</span>
+            <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">updater</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">updater</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="c1"># Закриваємо БД</span>
+            <span class="k">await</span> <span class="n">close_db</span><span class="p">()</span>
+            <span class="c1"># Закриваємо AI сесію</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">services.ai_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ai_session</span>
+            <span class="k">if</span> <span class="n">_ai_session</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">_ai_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ AI сесія закрита.&quot;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🛑 Бот повністю зупинений. Гарного дня!&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Одне єдине місце входу в асинхронність</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🛑 Бот зупинений користувачем.&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
