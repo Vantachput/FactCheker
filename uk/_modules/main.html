@@ -95,6 +95,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">handlers.callback_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle_callback</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">handlers.command_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">start</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">handlers.message_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle_message</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">logger</span>
 
 <span class="n">load_dotenv</span><span class="p">()</span>
 <span class="n">user_states</span> <span class="o">=</span> <span class="p">{}</span>
@@ -146,7 +147,8 @@
 <span class="sd">    (routers) і запускає цикл (polling). При зупинці коректно закриває</span>
 <span class="sd">    всі з&#39;єднання з AI сесіям та БД.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
+    <span class="n">setup_logging</span><span class="p">()</span>
+    
     <span class="k">await</span> <span class="n">init_db</span><span class="p">()</span>
 
     <span class="n">app</span> <span class="o">=</span> <span class="n">ApplicationBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">token</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BOT_TOKEN&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
@@ -155,7 +157,7 @@
     <span class="n">app</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CallbackQueryHandler</span><span class="p">(</span><span class="n">callback_wrapper</span><span class="p">))</span>
     <span class="n">app</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">MessageHandler</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">ALL</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">filters</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span> <span class="n">message_wrapper</span><span class="p">))</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🚀 Бот запущений асинхронно...&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;🚀 Бот запущений асинхронно...&quot;</span><span class="p">)</span>
 
     <span class="c1"># 3. Запуск через контекстний менеджер (найбільш стабільний варіант)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">app</span><span class="p">:</span>
@@ -168,7 +170,7 @@
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="c1"># Це виключення виникає при зупинці asyncio.run</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⏳ Зупинка процесів...&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;⏳ Зупинка процесів...&quot;</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="c1"># 1. Зупиняємо Telegram процеси</span>
             <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">updater</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
@@ -180,9 +182,9 @@
             <span class="kn">from</span><span class="w"> </span><span class="nn">services.ai_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ai_session</span>
             <span class="k">if</span> <span class="n">_ai_session</span><span class="p">:</span>
                 <span class="k">await</span> <span class="n">_ai_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ AI сесія закрита.&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;✅ AI сесія закрита.&quot;</span><span class="p">)</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🛑 Бот повністю зупинений. Гарного дня!&quot;</span><span class="p">)</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;🛑 Бот повністю зупинений. Гарного дня!&quot;</span><span class="p">)</span></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
@@ -190,6 +192,7 @@
         <span class="c1"># Одне єдине місце входу в асинхронність</span>
         <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+        <span class="c1"># logging might be down here, but we can try or use print</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🛑 Бот зупинений користувачем.&quot;</span><span class="p">)</span>
 </pre></div>
 

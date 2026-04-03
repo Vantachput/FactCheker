@@ -90,6 +90,8 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">telegram</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinkPreviewOptions</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">database.db_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_and_increment_limit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">services.ai_service</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">call_base_gpt</span><span class="p">,</span>
@@ -261,7 +263,7 @@
             <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
                 <span class="c1"># 1. Спроба знайти подію за &quot;розумним&quot; запитом</span>
                 <span class="n">search_query</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_search_query</span><span class="p">(</span><span class="n">claim</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attempt 1 Query: </span><span class="si">{</span><span class="n">search_query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Для дебагу</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attempt 1 Query: </span><span class="si">{</span><span class="n">search_query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Для дебагу</span>
                 
                 <span class="n">raw</span> <span class="o">=</span> <span class="k">await</span> <span class="n">serper_search</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SERPER_API_KEY&quot;</span><span class="p">))</span>
                 
@@ -270,7 +272,7 @@
                 <span class="c1"># або події не існує.</span>
                 <span class="c1"># Спробуємо знайти хоча б згадку джерела або ключових імен.</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attempt 1 failed. Trying broad search...&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attempt 1 failed. Trying broad search...&quot;</span><span class="p">)</span>
                     <span class="c1"># Простий алгоритм: беремо перші 30 слів тексту, </span>
                     <span class="c1"># щоб Google сам розібрався</span>
                     <span class="n">fallback_query</span> <span class="o">=</span> <span class="n">claim</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span>
@@ -297,7 +299,7 @@
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="c1"># Це зловить будь-яку помилку (наприклад, Markdown або API)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;КРИТИЧНА ПОМИЛКА: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;КРИТИЧНА ПОМИЛКА: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;status_msg&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
                 <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;❌ Помилка: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
