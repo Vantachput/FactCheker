@@ -12,7 +12,7 @@
 #   make help       — показати всі команди
 # ==============================================================================
 
-.PHONY: help dev test lint lint-fix format docs backup deploy restart status logs
+.PHONY: help dev test lint lint-fix format docs profile backup deploy restart status logs
 
 PYTHON     := .venv/bin/python
 PIP        := .venv/bin/pip
@@ -34,6 +34,7 @@ help:
 	@echo "    make lint-fix     Auto-fix linting issues"
 	@echo "    make format       Format code (ruff format)"
 	@echo "    make docs         Build Sphinx docs (Ukrainian)"
+	@echo "    make profile      Run performance profiling suite"
 	@echo ""
 	@echo "  PRODUCTION (Linux)"
 	@echo "    make backup       Backup SQLite database"
@@ -74,6 +75,11 @@ docs:
 	@echo ">>> Building Sphinx documentation (Ukrainian)..."
 	cd docs && $(PYTHON) -m sphinx -b html source build/html/uk
 	@echo ">>> Docs ready at: docs/build/html/uk/index.html"
+
+profile:
+	@echo ">>> Running FactChecker Performance Profiling Suite..."
+	$(PYTHON) profiling/run_profiling.py
+	@echo ">>> Profiling complete."
 
 # ---------------------------------------------------------------------------- #
 #  PRODUCTION (Linux only)
