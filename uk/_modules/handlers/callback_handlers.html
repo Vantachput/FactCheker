@@ -101,45 +101,61 @@
 <span class="sd">        user_states (dict): Глобальний словник сесій користувачів.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">callback_query</span>
-    <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">answer</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">answer</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;old&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;invalid&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;timeout&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="c1"># Ігноруємо помилку старих натискань кнопок (коли бот був офлайн)</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
     <span class="n">uid</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">from_user</span><span class="o">.</span><span class="n">id</span>
     <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">user_states</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
 
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">safe_edit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;not modified&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
     <span class="k">if</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;main_menu&quot;</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span><span class="s2">&quot;Головне меню:&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">())</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span><span class="s2">&quot;Головне меню:&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">())</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;menu_settings&quot;</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;Оберіть категорію:&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_settings_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;menu_ft&quot;</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;Оберіть навчену модель:&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_ft_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;set_ft_together&quot;</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;together&quot;</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;✅ Обрано Fine-tune: Llama 3.1&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;set_ft_openai&quot;</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;openai_ft&quot;</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;✅ Обрано Fine-tune: GPT-4o-mini&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;set_web&quot;</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;Оберіть модель Perplexity:&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_pplx_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;set_base&quot;</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;base&quot;</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;✅ Обрано Base (Serper + GPT)&quot;</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">()</span>
         <span class="p">)</span>
 
@@ -150,7 +166,7 @@
             <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;deep&quot;</span><span class="p">,</span> <span class="s2">&quot;sonar-deep-research&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;✅ Обрано Perplexity: **</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">**&quot;</span><span class="p">,</span>
             <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">(),</span>
             <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span>
@@ -158,7 +174,7 @@
 
     <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="s2">&quot;menu_classify&quot;</span><span class="p">:</span>
         <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;WAITING&quot;</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="s2">&quot;📝 **Надішліть текст новини для аналізу.**&quot;</span><span class="p">,</span>
             <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_back_button</span><span class="p">(),</span>
             <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">,</span>
@@ -194,7 +210,7 @@
             <span class="s2">&quot;останній інстанції. Завжди зберігайте критичне &quot;</span>
             <span class="s2">&quot;мислення!* 🧩&quot;</span>
         <span class="p">)</span>
-        <span class="k">await</span> <span class="n">query</span><span class="o">.</span><span class="n">edit_message_text</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">safe_edit</span><span class="p">(</span>
             <span class="n">help_text</span><span class="p">,</span> <span class="n">reply_markup</span><span class="o">=</span><span class="n">get_main_menu</span><span class="p">(),</span> <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span>
         <span class="p">)</span></div>
 

@@ -81,8 +81,10 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">services.threads_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadsService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">telegram.ext</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ApplicationBuilder</span><span class="p">,</span>
     <span class="n">CallbackQueryHandler</span><span class="p">,</span>
@@ -97,7 +99,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">handlers.message_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle_message</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">logger</span>
 
-<span class="n">load_dotenv</span><span class="p">()</span>
 <span class="n">user_states</span> <span class="o">=</span> <span class="p">{}</span>
 
 
