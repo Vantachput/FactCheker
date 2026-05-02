@@ -13,6 +13,7 @@ import json
 import logging
 from datetime import datetime
 
+import aiofiles
 import sys
 
 # Створюємо глобальний логер для застосунку
@@ -157,4 +158,4 @@ async def log_ai_usage(method: str, model_name: str, usage_data: object, user_id
     
     if details:
         print(f" Details: {' | '.join(details)}")
-    print("─"*75)
+    print("─"*75)

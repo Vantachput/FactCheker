@@ -6,8 +6,10 @@
 """
 import asyncio
 import os
-
+from services.threads_service import ThreadsService
 from dotenv import load_dotenv
+
+load_dotenv(override=True)
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
@@ -22,7 +24,6 @@ from handlers.command_handlers import start
 from handlers.message_handlers import handle_message
 from utils.logger import setup_logging, logger
 
-load_dotenv()
 user_states = {}
 
 
@@ -106,4 +107,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         # logging might be down here, but we can try or use print
-        print("\n🛑 Бот зупинений користувачем.")
+        print("\n🛑 Бот зупинений користувачем.")

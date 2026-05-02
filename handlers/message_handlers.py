@@ -26,6 +26,7 @@ from services.ai_service import (
     generate_search_query,
 )
 from services.search_service import filter_sources, serper_search
+from services.threads_service import ThreadsService
 from utils.helpers import get_progress_bar, split_text
 from utils.keyboards import get_main_menu
 
@@ -47,53 +48,43 @@ async def send_smart_reply(update, text: str, status_msg=None):
     MAX_LEN = 4000
     
     # Налаштування для відображення посилання (фрейму)
-    # prefer_large_media=True зробить ту саму велику картинку, якщо вона є на сайті
     link_preview_cfg = LinkPreviewOptions(
         is_disabled=False, 
         prefer_large_media=True, 
         show_above_text=False
     )
+    no_preview = LinkPreviewOptions(is_disabled=True)
     
+    async def _safe_send(content, is_edit=False, preview_opts=None):
+        try:
+            if is_edit and status_msg:
+                await status_msg.edit_text(content, parse_mode="Markdown", link_preview_options=preview_opts)
+            else:
+                await update.message.reply_text(content, parse_mode="Markdown", link_preview_options=preview_opts)
+        except Exception as e:
+            # Fallback for Markdown parse errors (unclosed entities)
+            if "parse" in str(e).lower() or "entity" in str(e).lower() or "markdown" in str(e).lower():
+                logger.warning(f"Markdown parse error, falling back to raw text. Error: {e}")
+                if is_edit and status_msg:
+                    await status_msg.edit_text(content, link_preview_options=preview_opts)
+                else:
+                    await update.message.reply_text(content, link_preview_options=preview_opts)
+            else:
+                raise e
+
     if len(text) <= MAX_LEN:
         content = f"⚖️ **Результат:**\n\n{text}"
-        if status_msg:
-            await status_msg.edit_text(
-                content, 
-                parse_mode="Markdown", 
-                link_preview_options=link_preview_cfg
-            )
-        else:
-            await update.message.reply_text(
-                content, 
-                parse_mode="Markdown", 
-                link_preview_options=link_preview_cfg
-            )
+        await _safe_send(content, is_edit=bool(status_msg), preview_opts=link_preview_cfg)
     else:
         parts = split_text(text)
         
         # Для першої частини вмикаємо прев'ю
         first_part = f"⚖️ **Результат (Ч. 1):**\n\n{parts[0]}"
-        if status_msg:
-            await status_msg.edit_text(
-                first_part, 
-                parse_mode="Markdown", 
-                link_preview_options=link_preview_cfg
-            )
-        else:
-            await update.message.reply_text(
-                first_part, 
-                parse_mode="Markdown", 
-                link_preview_options=link_preview_cfg
-            )
+        await _safe_send(first_part, is_edit=bool(status_msg), preview_opts=link_preview_cfg)
             
-        # Для наступних частин вимикаємо прев'ю, щоб не спамити фреймами
-        no_preview = LinkPreviewOptions(is_disabled=True)
+        # Для наступних частин вимикаємо прев'ю
         for i, part in enumerate(parts[1:], 2):
-            await update.message.reply_text(
-                f"⚖️ **Результат (Ч. {i}):**\n\n{part}", 
-                parse_mode="Markdown",
-                link_preview_options=no_preview
-            )
+            await _safe_send(f"⚖️ **Результат (Ч. {i}):**\n\n{part}", is_edit=False, preview_opts=no_preview)
 
 async def handle_message(update, context, user_states: dict):
     """Головний обробник контенту (новин) від користувачів.
@@ -119,6 +110,26 @@ async def handle_message(update, context, user_states: dict):
             # якщо message чомусь порожній
             msg = update.message
             raw_text = msg.text or msg.caption or ""
+            
+            if "threads.net" in raw_text or "threads.com" in raw_text:
+                tmp_msg = await msg.reply_text("🌐 Виявлено посилання Threads. Перевіряю доступ до API...")
+                threads_token = os.getenv("THREADS_ACCESS_TOKEN", "").strip(' "')
+                threads_service = ThreadsService(threads_token)
+                
+                if not await threads_service.is_token_valid():
+                    await tmp_msg.edit_text("❌ Помилка: Токен доступу Threads недійсний або прострочений.")
+                    user_states[uid]["action"] = None
+                    return
+                
+                await tmp_msg.edit_text("🌐 Отримую оригінальний текст поста через API...")
+                post_text = await threads_service.get_post_text(raw_text)
+                if post_text:
+                    raw_text = f"Отримано з Threads:\n{post_text}"
+                    await tmp_msg.edit_text("✅ Текст поста з Threads успішно завантажено через API.")
+                else:
+                    await tmp_msg.edit_text("❌ Не вдалося отримати текст із посилання Threads через API. Можливо, пост приватний або видалений.")
+                    user_states[uid]["action"] = None
+                    return
             
             # 2. Визначення джерела (репост чи ні) з перевірками на None
             claim = raw_text

@@ -24,45 +24,61 @@ async def handle_callback(update, context, user_states: dict):
         user_states (dict): Глобальний словник сесій користувачів.
     """
     query = update.callback_query
-    await query.answer()
+    try:
+        await query.answer()
+    except Exception as e:
+        if "old" in str(e).lower() or "invalid" in str(e).lower() or "timeout" in str(e).lower():
+            # Ігноруємо помилку старих натискань кнопок (коли бот був офлайн)
+            pass
+        else:
+            raise e
     uid = query.from_user.id
     if uid not in user_states:
         user_states[uid] = {"method": "base", "action": None}
 
+    async def safe_edit(*args, **kwargs):
+        try:
+            await query.edit_message_text(*args, **kwargs)
+        except Exception as e:
+            if "not modified" in str(e).lower():
+                pass
+            else:
+                raise e
+
     if query.data == "main_menu":
         user_states[uid]["action"] = None
-        await query.edit_message_text("Головне меню:", reply_markup=get_main_menu())
+        await safe_edit("Головне меню:", reply_markup=get_main_menu())
 
     elif query.data == "menu_settings":
-        await query.edit_message_text(
+        await safe_edit(
             "Оберіть категорію:", reply_markup=get_settings_menu()
         )
 
     elif query.data == "menu_ft":
-        await query.edit_message_text(
+        await safe_edit(
             "Оберіть навчену модель:", reply_markup=get_ft_menu()
         )
 
     elif query.data == "set_ft_together":
         user_states[uid]["method"] = "together"
-        await query.edit_message_text(
+        await safe_edit(
             "✅ Обрано Fine-tune: Llama 3.1", reply_markup=get_main_menu()
         )
 
     elif query.data == "set_ft_openai":
         user_states[uid]["method"] = "openai_ft"
-        await query.edit_message_text(
+        await safe_edit(
             "✅ Обрано Fine-tune: GPT-4o-mini", reply_markup=get_main_menu()
         )
 
     elif query.data == "set_web":
-        await query.edit_message_text(
+        await safe_edit(
             "Оберіть модель Perplexity:", reply_markup=get_pplx_menu()
         )
 
     elif query.data == "set_base":
         user_states[uid]["method"] = "base"
-        await query.edit_message_text(
+        await safe_edit(
             "✅ Обрано Base (Serper + GPT)", reply_markup=get_main_menu()
         )
 
@@ -73,7 +89,7 @@ async def handle_callback(update, context, user_states: dict):
             .replace("deep", "sonar-deep-research")
         )
         user_states[uid]["method"] = m
-        await query.edit_message_text(
+        await safe_edit(
             f"✅ Обрано Perplexity: **{m}**",
             reply_markup=get_main_menu(),
             parse_mode="Markdown",
@@ -81,7 +97,7 @@ async def handle_callback(update, context, user_states: dict):
 
     elif query.data == "menu_classify":
         user_states[uid]["action"] = "WAITING"
-        await query.edit_message_text(
+        await safe_edit(
             "📝 **Надішліть текст новини для аналізу.**",
             reply_markup=get_back_button(),
             parse_mode="Markdown",
@@ -117,6 +133,6 @@ async def handle_callback(update, context, user_states: dict):
             "останній інстанції. Завжди зберігайте критичне "
             "мислення!* 🧩"
         )
-        await query.edit_message_text(
+        await safe_edit(
             help_text, reply_markup=get_main_menu(), parse_mode="Markdown"
         )

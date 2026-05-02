@@ -56,3 +56,6 @@ docs.zip
 docs/build/
 docs/html/
 _build/
+
+# Testing
+scratch/
