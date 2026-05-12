@@ -94,17 +94,22 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">database.db_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_and_increment_limit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">services.ai_service</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">analyze_image_from_url</span><span class="p">,</span>
+    <span class="n">analyze_video_with_together</span><span class="p">,</span>
     <span class="n">call_base_gpt</span><span class="p">,</span>
     <span class="n">call_openai_ft</span><span class="p">,</span>
     <span class="n">call_perplexity</span><span class="p">,</span>
     <span class="n">call_together</span><span class="p">,</span>
+    <span class="n">extract_text_from_image</span><span class="p">,</span>
+    <span class="n">extract_factors_from_video_analysis</span><span class="p">,</span>
     <span class="n">generate_search_query</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">services.search_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_sources</span><span class="p">,</span> <span class="n">serper_search</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">services.threads_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadsService</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_progress_bar</span><span class="p">,</span> <span class="n">split_text</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_progress_bar</span><span class="p">,</span> <span class="n">split_text</span><span class="p">,</span> <span class="n">convert_to_wav</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils.keyboards</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_main_menu</span>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">services.deepgram_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">transcribe_audio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 
 <div class="viewcode-block" id="send_smart_reply">
 <a class="viewcode-back" href="../../handlers.html#handlers.message_handlers.send_smart_reply">[docs]</a>
@@ -190,6 +195,96 @@
             <span class="c1"># якщо message чомусь порожній</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">message</span>
             <span class="n">raw_text</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">text</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">caption</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            <span class="c1"># 🔥 NEW: обробка voice/audio</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">raw_text</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">voice</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">audio</span><span class="p">):</span>
+                <span class="n">status_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;🎤 Розпізнаю аудіо...&quot;</span><span class="p">)</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">file</span> <span class="o">=</span> <span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span>
+                        <span class="n">msg</span><span class="o">.</span><span class="n">voice</span><span class="o">.</span><span class="n">file_id</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">voice</span> <span class="k">else</span> <span class="n">msg</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">file_id</span>
+                    <span class="p">)</span>
+
+                    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.ogg&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">download_to_drive</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="n">wav_path</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.ogg&quot;</span><span class="p">,</span> <span class="s2">&quot;.wav&quot;</span><span class="p">)</span>
+                        <span class="n">convert_to_wav</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">wav_path</span><span class="p">)</span>
+                        <span class="n">audio_path</span> <span class="o">=</span> <span class="n">wav_path</span>
+
+                    <span class="n">transcript</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transcribe_audio</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
+
+                    <span class="n">raw_text</span> <span class="o">=</span> <span class="n">transcript</span>
+
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;📝 Розпізнано:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">transcript</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Помилка розпізнавання: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+            
+            <span class="c1"># 1в. Обробка відео (звичайне відео або кружечок)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">raw_text</span> <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">video</span> <span class="ow">or</span> <span class="n">msg</span><span class="o">.</span><span class="n">video_note</span><span class="p">):</span>
+                <span class="n">status_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;📥 Завантажую відео для аналізу...&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">video_file</span> <span class="o">=</span> <span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span>
+                        <span class="n">msg</span><span class="o">.</span><span class="n">video</span><span class="o">.</span><span class="n">file_id</span> <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">video</span> <span class="k">else</span> <span class="n">msg</span><span class="o">.</span><span class="n">video_note</span><span class="o">.</span><span class="n">file_id</span>
+                    <span class="p">)</span>
+                    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">video_file</span><span class="o">.</span><span class="n">download_to_drive</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="n">video_path</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">name</span>
+                    
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;🎥 Аналізую відео за допомогою спеціальної моделі (Gemma 3)...&quot;</span><span class="p">)</span>
+                    <span class="n">video_analysis</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyze_video_with_together</span><span class="p">(</span><span class="n">video_path</span><span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="s2">&quot;Помилка&quot;</span> <span class="ow">in</span> <span class="n">video_analysis</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ </span><span class="si">{</span><span class="n">video_analysis</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">return</span>
+
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;🧠 Виділяю ключові факти для пошуку...&quot;</span><span class="p">)</span>
+                    <span class="n">factors</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extract_factors_from_video_analysis</span><span class="p">(</span><span class="n">video_analysis</span><span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">factors</span> <span class="ow">or</span> <span class="s2">&quot;NO_FACTUAL_CONTENT&quot;</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;❌ Це відео не містить фактичної інформації для перевірки (можливо, це розважальний контент або меми).&quot;</span><span class="p">)</span>
+                        <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">return</span>
+                    
+                    <span class="n">raw_text</span> <span class="o">=</span> <span class="n">factors</span>
+                    <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;video_analysis&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">video_analysis</span>
+                    
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Відео проаналізовано. Знайдені ключові заяви/події:</span><span class="se">\n\n</span><span class="s2">_</span><span class="si">{</span><span class="n">factors</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span> <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span><span class="p">)</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">status_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Помилка обробки відео: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+
+            <span class="c1"># 1б. Обробка зображень через Vision API</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">photo</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">raw_text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="c1"># Фото без тексту/підпису — аналізуємо через GPT-4o-mini Vision</span>
+                <span class="n">vision_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;🖼️ Виявлено зображення. Аналізую вміст...&quot;</span><span class="p">)</span>
+                <span class="n">largest_photo</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">photo</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Telegram дає список від малого до великого</span>
+                <span class="n">extracted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extract_text_from_image</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">bot</span><span class="p">,</span> <span class="n">largest_photo</span><span class="o">.</span><span class="n">file_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">extracted</span><span class="p">:</span>
+                    <span class="n">raw_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Зображення] </span><span class="si">{</span><span class="n">extracted</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">await</span> <span class="n">vision_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;✅ Вміст зображення розпізнано:</span><span class="se">\n\n</span><span class="s2">_</span><span class="si">{</span><span class="n">extracted</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}{</span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">extracted</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span>
+                        <span class="n">parse_mode</span><span class="o">=</span><span class="s2">&quot;Markdown&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">vision_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span>
+                        <span class="s2">&quot;❌ Зображення не містить фактичної інформації для перевірки. &quot;</span>
+                        <span class="s2">&quot;Надішліть скриншот із текстом або фото події.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">return</span>
+            <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">photo</span> <span class="ow">and</span> <span class="n">raw_text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="c1"># Фото з підписом — також аналізуємо зображення й додаємо до тексту</span>
+                <span class="n">vision_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;🖼️ Аналізую зображення + підпис...&quot;</span><span class="p">)</span>
+                <span class="n">largest_photo</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">photo</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">extracted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extract_text_from_image</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">bot</span><span class="p">,</span> <span class="n">largest_photo</span><span class="o">.</span><span class="n">file_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">extracted</span><span class="p">:</span>
+                    <span class="n">raw_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">raw_text</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">[Вміст зображення]: </span><span class="si">{</span><span class="n">extracted</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">await</span> <span class="n">vision_msg</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
             
             <span class="k">if</span> <span class="s2">&quot;threads.net&quot;</span> <span class="ow">in</span> <span class="n">raw_text</span> <span class="ow">or</span> <span class="s2">&quot;threads.com&quot;</span> <span class="ow">in</span> <span class="n">raw_text</span><span class="p">:</span>
                 <span class="n">tmp_msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_text</span><span class="p">(</span><span class="s2">&quot;🌐 Виявлено посилання Threads. Перевіряю доступ до API...&quot;</span><span class="p">)</span>
@@ -202,14 +297,41 @@
                     <span class="k">return</span>
                 
                 <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;🌐 Отримую оригінальний текст поста через API...&quot;</span><span class="p">)</span>
-                <span class="n">post_text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">threads_service</span><span class="o">.</span><span class="n">get_post_text</span><span class="p">(</span><span class="n">raw_text</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">post_text</span><span class="p">:</span>
-                    <span class="n">raw_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Отримано з Threads:</span><span class="se">\n</span><span class="si">{</span><span class="n">post_text</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;✅ Текст поста з Threads успішно завантажено через API.&quot;</span><span class="p">)</span>
+                <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">threads_service</span><span class="o">.</span><span class="n">get_post_data</span><span class="p">(</span><span class="n">raw_text</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">post_data</span><span class="p">:</span>
+                    <span class="n">post_text</span> <span class="o">=</span> <span class="n">post_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">)</span>       <span class="c1"># може бути None</span>
+                    <span class="n">post_image_url</span> <span class="o">=</span> <span class="n">post_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;image_url&quot;</span><span class="p">)</span>
+
+                    <span class="c1"># Аналізуємо зображення якщо воно є (завжди)</span>
+                    <span class="n">img_description</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">if</span> <span class="n">post_image_url</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;🖼️ Аналізую зображення поста...&quot;</span><span class="p">)</span>
+                        <span class="n">img_description</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyze_image_from_url</span><span class="p">(</span><span class="n">post_image_url</span><span class="p">)</span>
+
+                    <span class="c1"># Формуємо фінальний текст для аналізу</span>
+                    <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">if</span> <span class="n">post_text</span><span class="p">:</span>
+                        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Отримано з Threads:</span><span class="se">\n</span><span class="si">{</span><span class="n">post_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">img_description</span><span class="p">:</span>
+                        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Зображення до поста]: </span><span class="si">{</span><span class="n">img_description</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">parts</span><span class="p">:</span>
+                        <span class="n">raw_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">post_text</span> <span class="ow">and</span> <span class="n">img_description</span><span class="p">:</span>
+                            <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;✅ Текст + зображення поста з Threads завантажено.&quot;</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">img_description</span><span class="p">:</span>
+                            <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;✅ Пост без тексту — проаналізовано зображення.&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;✅ Інформація з поста Threads успішно завантажено.&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;❌ Пост не містить ні тексту, ні інформативного зображення.&quot;</span><span class="p">)</span>
+                        <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">return</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;❌ Не вдалося отримати текст із посилання Threads через API. Можливо, пост приватний або видалений.&quot;</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="n">tmp_msg</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;❌ Не вдалося отримати інформацію з поста Threads. Можливо, пост приватний або видалений.&quot;</span><span class="p">)</span>
                     <span class="n">user_states</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
                     <span class="k">return</span>
+
             
             <span class="c1"># 2. Визначення джерела (репост чи ні) з перевірками на None</span>
             <span class="n">claim</span> <span class="o">=</span> <span class="n">raw_text</span>
@@ -292,8 +414,9 @@
                     <span class="p">)</span>
 
                 <span class="n">verified</span><span class="p">,</span> <span class="n">unverified</span> <span class="o">=</span> <span class="n">filter_sources</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+                <span class="n">video_analysis</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;video_analysis&quot;</span><span class="p">)</span>
                 <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_base_gpt</span><span class="p">(</span>
-                    <span class="n">claim</span><span class="p">,</span> <span class="n">verified</span><span class="p">,</span> <span class="n">unverified</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">),</span> <span class="n">uid</span>
+                    <span class="n">claim</span><span class="p">,</span> <span class="n">verified</span><span class="p">,</span> <span class="n">unverified</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">),</span> <span class="n">uid</span><span class="p">,</span> <span class="n">video_analysis</span>
                 <span class="p">)</span>
             
             <span class="k">else</span><span class="p">:</span> <span class="c1"># Perplexity</span>

@@ -167,6 +167,242 @@
         <span class="k">return</span> <span class="n">user_text</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span></div>
 
 
+<div class="viewcode-block" id="extract_text_from_image">
+<a class="viewcode-back" href="../../services.html#services.ai_service.extract_text_from_image">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">extract_text_from_image</span><span class="p">(</span><span class="n">bot</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Витягує текст або опис події з зображення за допомогою GPT-4o-mini Vision.</span>
+<span class="sd">    </span>
+<span class="sd">    Якщо на картинці є текст — повертає його дослівно.</span>
+<span class="sd">    Якщо картинка зображає подію/дію без тексту — описує що зображено </span>
+<span class="sd">    у форматі, придатному для подальшої перевірки фактів.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        bot: Telegram Bot instance для завантаження файлу.</span>
+<span class="sd">        file_id (str): Telegram file_id зображення.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Витягнутий текст або опис події. None при помилці.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Завантажуємо файл з Telegram</span>
+        <span class="n">tg_file</span> <span class="o">=</span> <span class="k">await</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="n">file_bytes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tg_file</span><span class="o">.</span><span class="n">download_as_bytearray</span><span class="p">()</span>
+        <span class="n">image_b64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">file_bytes</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        
+        <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;You are an image analysis assistant for a Ukrainian fact-checking bot.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Your task: analyze the image and extract verifiable information from it.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;RULES:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. If the image contains TEXT (screenshot, news headline, poster, etc.) — &quot;</span>
+            <span class="s2">&quot;transcribe ALL text exactly as it appears. Keep the original language.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. If the image depicts an EVENT or ACTION (photo of an explosion, protest, &quot;</span>
+            <span class="s2">&quot;accident, political event, etc.) without text — describe what you see &quot;</span>
+            <span class="s2">&quot;briefly and factually, focusing on verifiable details &quot;</span>
+            <span class="s2">&quot;(location clues, visible people, symbols, approximate time period).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;3. If the image is purely decorative or contains no factual information — &quot;</span>
+            <span class="s2">&quot;respond with ONLY: &#39;NO_FACTUAL_CONTENT&#39;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Output the result in the SAME language as the text on the image. &quot;</span>
+            <span class="s2">&quot;If there is no text, output in Ukrainian.&quot;</span>
+        <span class="p">)</span>
+        
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">sys_prompt</span><span class="p">},</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image_url&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;data:image/jpeg;base64,</span><span class="si">{</span><span class="n">image_b64</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;detail&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1000</span>
+        <span class="p">)</span>
+        
+        <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;NO_FACTUAL_CONTENT&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">result</span>
+        
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Помилка Vision API: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="analyze_image_from_url">
+<a class="viewcode-back" href="../../services.html#services.ai_service.analyze_image_from_url">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_image_from_url</span><span class="p">(</span><span class="n">image_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує зображення за публічним URL через GPT-4o-mini Vision.</span>
+<span class="sd">    </span>
+<span class="sd">    Використовується для аналізу прикріплених до постів Threads фотографій,</span>
+<span class="sd">    коли сам текст поста є коротким або посилається на зображення.</span>
+<span class="sd">    </span>
+<span class="sd">    Завантажує зображення локально перед відправкою, щоб обійти обмеження</span>
+<span class="sd">    OpenAI на завантаження з певних CDN (наприклад, Instagram).</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        image_url (str): Публічний URL зображення.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Опис вмісту зображення. None якщо немає фактичної інформації або помилка.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Завантажуємо зображення самі, бо OpenAI часто не має доступу до CDN Meta</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_ai_session</span><span class="p">()</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">image_url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span> <span class="k">as</span> <span class="n">resp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Не вдалося завантажити зображення з Threads: </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">image_b64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;You are an image analysis assistant for a Ukrainian fact-checking bot.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Your task: analyze the image and extract verifiable information from it.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;RULES:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;1. If the image contains TEXT (screenshot, news headline, poster, etc.) — &quot;</span>
+            <span class="s2">&quot;transcribe ALL text exactly as it appears. Keep the original language.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;2. If the image depicts an EVENT or ACTION (photo of an explosion, protest, &quot;</span>
+            <span class="s2">&quot;accident, political event, etc.) without text — describe what you see &quot;</span>
+            <span class="s2">&quot;briefly and factually, focusing on verifiable details &quot;</span>
+            <span class="s2">&quot;(location clues, visible people, symbols, approximate time period).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;3. If the image is purely decorative or contains no factual information — &quot;</span>
+            <span class="s2">&quot;respond with ONLY: &#39;NO_FACTUAL_CONTENT&#39;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Output the result in Ukrainian.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">sys_prompt</span><span class="p">},</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image_url&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;data:image/jpeg;base64,</span><span class="si">{</span><span class="n">image_b64</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;detail&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="mi">800</span>
+        <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;NO_FACTUAL_CONTENT&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Помилка Vision API (Base64): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="analyze_video_with_together">
+<a class="viewcode-back" href="../../services.html#services.ai_service.analyze_video_with_together">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_video_with_together</span><span class="p">(</span><span class="n">video_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує відео через модель Google Gemma 3 (Together AI).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+    
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TOGETHER_API_KEY&quot;</span><span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">video_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">video_b64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;google/gemma-3n-E4B-it&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Опиши це відео дуже детально. Які події, люди, дії або заяви тут присутні? Зосередься на фактах, які можна перевірити.&quot;</span><span class="p">},</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;video_url&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;video_url&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;data:video/mp4;base64,</span><span class="si">{</span><span class="n">video_b64</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span>
+            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
+        <span class="p">}</span>
+        
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
+        <span class="p">}</span>
+        
+        <span class="n">session</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_ai_session</span><span class="p">()</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s2">&quot;https://api.together.xyz/v1/chat/completions&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="mi">180</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">resp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Together AI Video API Error: </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка API (</span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">): Неможливо проаналізувати відео.&quot;</span>
+            
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;choices&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;message&quot;</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception in analyze_video_with_together: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка обробки відео: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="extract_factors_from_video_analysis">
+<a class="viewcode-back" href="../../services.html#services.ai_service.extract_factors_from_video_analysis">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">extract_factors_from_video_analysis</span><span class="p">(</span><span class="n">analysis</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Витягує ключові факти з детального опису відео для пошуку.&quot;&quot;&quot;</span>
+    <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Ти помічник, який витягує ключові фактологічні деталі з опису відео для подальшого фактчекінгу.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Якщо в описі відео немає нічого, що можна було б перевірити як факт (наприклад, це відео з котиком, &quot;</span>
+        <span class="s2">&quot;мем, випадковий запис гри, музичний кліп без заяв, чи просто розважальне відео), поверни РІВНО ОДНУ фразу: NO_FACTUAL_CONTENT</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Якщо ж відео містить заяви, події (наприклад, вибухи, протести, заяви політиків, новини), &quot;</span>
+        <span class="s2">&quot;сформулюй 2-4 речення з ключовими фактами, які потрібно перевірити в інтернеті. Пиши українською.&quot;</span>
+    <span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_prompt</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">analysis</span><span class="p">}</span>
+            <span class="p">],</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.1</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Помилка extract_factors_from_video_analysis: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">analysis</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span></div>
+
+
+
 <div class="viewcode-block" id="get_ai_session">
 <a class="viewcode-back" href="../../services.html#services.ai_service.get_ai_session">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_ai_session</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">:</span>
@@ -249,7 +485,7 @@
 
 <div class="viewcode-block" id="call_base_gpt">
 <a class="viewcode-back" href="../../services.html#services.ai_service.call_base_gpt">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_base_gpt</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">verified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">unverified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_base_gpt</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">verified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">unverified_srcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">video_analysis</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує новину за допомогою базових моделей OpenAI із наданням контексту (RAG).</span>
 <span class="sd">    </span>
 <span class="sd">    Реалізує логіку:</span>
@@ -278,8 +514,11 @@
     <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- GENERAL WEB SOURCES (Unverified/Contextual):</span><span class="se">\n</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">unverified_srcs</span><span class="p">:</span>
         <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unverified_srcs</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
         <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;No additional web mentions found.&quot;</span>
+
+    <span class="k">if</span> <span class="n">video_analysis</span><span class="p">:</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">--- INITIAL VIDEO ANALYSIS (Gemma 3):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="n">video_analysis</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
 
     <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">&quot;ROLE: You are an elite Ukrainian Fact-Checker Bot.</span><span class="se">\n</span><span class="s2">&quot;</span>

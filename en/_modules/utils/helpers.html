@@ -85,8 +85,10 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pytz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">imageio_ffmpeg</span>
 
 
 <div class="viewcode-block" id="split_text">
@@ -182,6 +184,22 @@
     <span class="n">tz_ua</span> <span class="o">=</span> <span class="n">pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="s1">&#39;Europe/Kyiv&#39;</span><span class="p">)</span>
     <span class="n">now_ua</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz_ua</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">now_ua</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="convert_to_wav">
+<a class="viewcode-back" href="../../utils.html#utils.helpers.convert_to_wav">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_wav</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">ffmpeg_exe</span> <span class="o">=</span> <span class="n">imageio_ffmpeg</span><span class="o">.</span><span class="n">get_ffmpeg_exe</span><span class="p">()</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ffmpeg_exe</span><span class="p">,</span>
+        <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="n">input_path</span><span class="p">,</span>
+        <span class="s2">&quot;-ar&quot;</span><span class="p">,</span> <span class="s2">&quot;16000&quot;</span><span class="p">,</span>   <span class="c1"># оптимально для ASR</span>
+        <span class="s2">&quot;-ac&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>       <span class="c1"># mono</span>
+        <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+        <span class="n">output_path</span>
+    <span class="p">]</span>
+
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">)</span></div>
 
 </pre></div>
 
