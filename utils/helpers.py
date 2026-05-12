@@ -10,8 +10,10 @@
 """
 import re
 from datetime import datetime
+import subprocess
 
 import pytz
+import imageio_ffmpeg
 
 
 def split_text(text: str, max_length: int = 4000) -> list[str]:
@@ -96,3 +98,16 @@ def get_ukraine_time() -> str:
     tz_ua = pytz.timezone('Europe/Kyiv')
     now_ua = datetime.now(tz_ua)
     return now_ua.strftime("%d.%m.%Y %H:%M")
+
+def convert_to_wav(input_path: str, output_path: str):
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    command = [
+        ffmpeg_exe,
+        "-i", input_path,
+        "-ar", "16000",   # оптимально для ASR
+        "-ac", "1",       # mono
+        "-y",
+        output_path
+    ]
+
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

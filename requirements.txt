@@ -118,3 +118,4 @@ wcmatch
 wrapt
 yarl
 zipp
+imageio-ffmpeg

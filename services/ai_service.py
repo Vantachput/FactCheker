@@ -89,6 +89,230 @@ async def generate_search_query(user_text: str, model_id: str = "gpt-4o-mini") -
     except Exception:
         return user_text[:100]
 
+async def extract_text_from_image(bot, file_id: str) -> str:
+    """Витягує текст або опис події з зображення за допомогою GPT-4o-mini Vision.
+    
+    Якщо на картинці є текст — повертає його дослівно.
+    Якщо картинка зображає подію/дію без тексту — описує що зображено 
+    у форматі, придатному для подальшої перевірки фактів.
+    
+    Args:
+        bot: Telegram Bot instance для завантаження файлу.
+        file_id (str): Telegram file_id зображення.
+    
+    Returns:
+        str: Витягнутий текст або опис події. None при помилці.
+    """
+    import base64
+    
+    try:
+        # Завантажуємо файл з Telegram
+        tg_file = await bot.get_file(file_id)
+        file_bytes = await tg_file.download_as_bytearray()
+        image_b64 = base64.b64encode(file_bytes).decode("utf-8")
+        
+        sys_prompt = (
+            "You are an image analysis assistant for a Ukrainian fact-checking bot.\n"
+            "Your task: analyze the image and extract verifiable information from it.\n\n"
+            "RULES:\n"
+            "1. If the image contains TEXT (screenshot, news headline, poster, etc.) — "
+            "transcribe ALL text exactly as it appears. Keep the original language.\n"
+            "2. If the image depicts an EVENT or ACTION (photo of an explosion, protest, "
+            "accident, political event, etc.) without text — describe what you see "
+            "briefly and factually, focusing on verifiable details "
+            "(location clues, visible people, symbols, approximate time period).\n"
+            "3. If the image is purely decorative or contains no factual information — "
+            "respond with ONLY: 'NO_FACTUAL_CONTENT'\n\n"
+            "Output the result in the SAME language as the text on the image. "
+            "If there is no text, output in Ukrainian."
+        )
+        
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": sys_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_b64}",
+                                "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1000
+        )
+        
+        result = response.choices[0].message.content.strip()
+        if result == "NO_FACTUAL_CONTENT":
+            return None
+        return result
+        
+    except Exception as e:
+        from utils.logger import logger
+        logger.error(f"Помилка Vision API: {e}")
+        return None
+
+async def analyze_image_from_url(image_url: str) -> str | None:
+    """Аналізує зображення за публічним URL через GPT-4o-mini Vision.
+    
+    Використовується для аналізу прикріплених до постів Threads фотографій,
+    коли сам текст поста є коротким або посилається на зображення.
+    
+    Завантажує зображення локально перед відправкою, щоб обійти обмеження
+    OpenAI на завантаження з певних CDN (наприклад, Instagram).
+    
+    Args:
+        image_url (str): Публічний URL зображення.
+    
+    Returns:
+        str: Опис вмісту зображення. None якщо немає фактичної інформації або помилка.
+    """
+    import base64
+    
+    try:
+        # Завантажуємо зображення самі, бо OpenAI часто не має доступу до CDN Meta
+        session = await get_ai_session()
+        async with session.get(image_url, timeout=20) as resp:
+            if resp.status != 200:
+                from utils.logger import logger
+                logger.error(f"Не вдалося завантажити зображення з Threads: {resp.status}")
+                return None
+            content = await resp.read()
+            image_b64 = base64.b64encode(content).decode("utf-8")
+
+        sys_prompt = (
+            "You are an image analysis assistant for a Ukrainian fact-checking bot.\n"
+            "Your task: analyze the image and extract verifiable information from it.\n\n"
+            "RULES:\n"
+            "1. If the image contains TEXT (screenshot, news headline, poster, etc.) — "
+            "transcribe ALL text exactly as it appears. Keep the original language.\n"
+            "2. If the image depicts an EVENT or ACTION (photo of an explosion, protest, "
+            "accident, political event, etc.) without text — describe what you see "
+            "briefly and factually, focusing on verifiable details "
+            "(location clues, visible people, symbols, approximate time period).\n"
+            "3. If the image is purely decorative or contains no factual information — "
+            "respond with ONLY: 'NO_FACTUAL_CONTENT'\n\n"
+            "Output the result in Ukrainian."
+        )
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": sys_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_b64}",
+                                "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=800
+        )
+
+        result = response.choices[0].message.content.strip()
+        if result == "NO_FACTUAL_CONTENT":
+            return None
+        return result
+
+    except Exception as e:
+        from utils.logger import logger
+        logger.error(f"Помилка Vision API (Base64): {e}")
+        return None
+
+async def analyze_video_with_together(video_path: str) -> str:
+    """Аналізує відео через модель Google Gemma 3 (Together AI)."""
+    import base64
+    import os
+    
+    api_key = os.getenv("TOGETHER_API_KEY")
+    
+    try:
+        with open(video_path, "rb") as f:
+            video_b64 = base64.b64encode(f.read()).decode("utf-8")
+        
+        payload = {
+            "model": "google/gemma-3n-E4B-it",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Опиши це відео дуже детально. Які події, люди, дії або заяви тут присутні? Зосередься на фактах, які можна перевірити."},
+                        {
+                            "type": "video_url",
+                            "video_url": {
+                                "url": f"data:video/mp4;base64,{video_b64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 1500,
+            "temperature": 0.2
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        session = await get_ai_session()
+        async with session.post(
+            "https://api.together.xyz/v1/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=180
+        ) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                from utils.logger import logger
+                logger.error(f"Together AI Video API Error: {resp.status} - {text}")
+                return f"Помилка API ({resp.status}): Неможливо проаналізувати відео."
+            
+            data = await resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+            
+    except Exception as e:
+        from utils.logger import logger
+        logger.error(f"Exception in analyze_video_with_together: {e}")
+        return f"Помилка обробки відео: {str(e)}"
+
+async def extract_factors_from_video_analysis(analysis: str) -> str:
+    """Витягує ключові факти з детального опису відео для пошуку."""
+    sys_prompt = (
+        "Ти помічник, який витягує ключові фактологічні деталі з опису відео для подальшого фактчекінгу.\n"
+        "Якщо в описі відео немає нічого, що можна було б перевірити як факт (наприклад, це відео з котиком, "
+        "мем, випадковий запис гри, музичний кліп без заяв, чи просто розважальне відео), поверни РІВНО ОДНУ фразу: NO_FACTUAL_CONTENT\n\n"
+        "Якщо ж відео містить заяви, події (наприклад, вибухи, протести, заяви політиків, новини), "
+        "сформулюй 2-4 речення з ключовими фактами, які потрібно перевірити в інтернеті. Пиши українською."
+    )
+    
+    try:
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": analysis}
+            ],
+            temperature=0.1
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        from utils.logger import logger
+        logger.error(f"Помилка extract_factors_from_video_analysis: {e}")
+        return analysis[:200]
+
+
 async def get_ai_session() -> aiohttp.ClientSession:
     """Повертає або створює глобальну aiohttp сесію для AI-запитів.
     
@@ -160,7 +384,7 @@ async def call_openai_ft(claim: str, model_id: str, user_id: int) -> str:
 
     return response.choices[0].message.content
 
-async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: list[str], model_id: str, user_id: int) -> str:
+async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: list[str], model_id: str, user_id: int, video_analysis: str = None) -> str:
     """Аналізує новину за допомогою базових моделей OpenAI із наданням контексту (RAG).
     
     Реалізує логіку:
@@ -189,8 +413,11 @@ async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: l
     context_text += "\n--- GENERAL WEB SOURCES (Unverified/Contextual):\n"
     if unverified_srcs:
         context_text += "\n".join(unverified_srcs)
-    else:
         context_text += "No additional web mentions found."
+
+    if video_analysis:
+        context_text += "\n\n--- INITIAL VIDEO ANALYSIS (Gemma 3):\n"
+        context_text += video_analysis + "\n"
 
     sys_instr = (
         "ROLE: You are an elite Ukrainian Fact-Checker Bot.\n"

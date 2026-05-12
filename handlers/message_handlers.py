@@ -19,17 +19,22 @@ from utils.logger import logger
 
 from database.db_manager import check_and_increment_limit
 from services.ai_service import (
+    analyze_image_from_url,
+    analyze_video_with_together,
     call_base_gpt,
     call_openai_ft,
     call_perplexity,
     call_together,
+    extract_text_from_image,
+    extract_factors_from_video_analysis,
     generate_search_query,
 )
 from services.search_service import filter_sources, serper_search
 from services.threads_service import ThreadsService
-from utils.helpers import get_progress_bar, split_text
+from utils.helpers import get_progress_bar, split_text, convert_to_wav
 from utils.keyboards import get_main_menu
-
+from services.deepgram_service import transcribe_audio
+import tempfile
 
 async def send_smart_reply(update, text: str, status_msg=None):
     """Відправляє великі повідомлення частинами.
@@ -110,6 +115,96 @@ async def handle_message(update, context, user_states: dict):
             # якщо message чомусь порожній
             msg = update.message
             raw_text = msg.text or msg.caption or ""
+            # 🔥 NEW: обробка voice/audio
+            if not raw_text and (msg.voice or msg.audio):
+                status_msg = await msg.reply_text("🎤 Розпізнаю аудіо...")
+
+                try:
+                    file = await context.bot.get_file(
+                        msg.voice.file_id if msg.voice else msg.audio.file_id
+                    )
+
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
+                        await file.download_to_drive(tmp.name)
+                        wav_path = tmp.name.replace(".ogg", ".wav")
+                        convert_to_wav(tmp.name, wav_path)
+                        audio_path = wav_path
+
+                    transcript = await transcribe_audio(audio_path)
+
+                    raw_text = transcript
+
+                    await status_msg.edit_text(
+                        f"📝 Розпізнано:\n\n{transcript[:200]}..."
+                    )
+
+                except Exception as e:
+                    await status_msg.edit_text(f"❌ Помилка розпізнавання: {str(e)}")
+                    return
+            
+            # 1в. Обробка відео (звичайне відео або кружечок)
+            if not raw_text and (msg.video or msg.video_note):
+                status_msg = await msg.reply_text("📥 Завантажую відео для аналізу...")
+                try:
+                    video_file = await context.bot.get_file(
+                        msg.video.file_id if msg.video else msg.video_note.file_id
+                    )
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+                        await video_file.download_to_drive(tmp.name)
+                        video_path = tmp.name
+                    
+                    await status_msg.edit_text("🎥 Аналізую відео за допомогою спеціальної моделі (Gemma 3)...")
+                    video_analysis = await analyze_video_with_together(video_path)
+                    
+                    if "Помилка" in video_analysis:
+                        await status_msg.edit_text(f"❌ {video_analysis}")
+                        user_states[uid]["action"] = None
+                        return
+
+                    await status_msg.edit_text("🧠 Виділяю ключові факти для пошуку...")
+                    factors = await extract_factors_from_video_analysis(video_analysis)
+                    
+                    if not factors or "NO_FACTUAL_CONTENT" in factors:
+                        await status_msg.edit_text("❌ Це відео не містить фактичної інформації для перевірки (можливо, це розважальний контент або меми).")
+                        user_states[uid]["action"] = None
+                        return
+                    
+                    raw_text = factors
+                    user_states[uid]["video_analysis"] = video_analysis
+                    
+                    await status_msg.edit_text(f"✅ Відео проаналізовано. Знайдені ключові заяви/події:\n\n_{factors}_", parse_mode="Markdown")
+
+                except Exception as e:
+                    await status_msg.edit_text(f"❌ Помилка обробки відео: {str(e)}")
+                    return
+
+            # 1б. Обробка зображень через Vision API
+            if msg.photo and not raw_text.strip():
+                # Фото без тексту/підпису — аналізуємо через GPT-4o-mini Vision
+                vision_msg = await msg.reply_text("🖼️ Виявлено зображення. Аналізую вміст...")
+                largest_photo = msg.photo[-1]  # Telegram дає список від малого до великого
+                extracted = await extract_text_from_image(context.bot, largest_photo.file_id)
+                if extracted:
+                    raw_text = f"[Зображення] {extracted}"
+                    await vision_msg.edit_text(
+                        f"✅ Вміст зображення розпізнано:\n\n_{extracted[:200]}{'...' if len(extracted) > 200 else ''}_",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await vision_msg.edit_text(
+                        "❌ Зображення не містить фактичної інформації для перевірки. "
+                        "Надішліть скриншот із текстом або фото події."
+                    )
+                    user_states[uid]["action"] = None
+                    return
+            elif msg.photo and raw_text.strip():
+                # Фото з підписом — також аналізуємо зображення й додаємо до тексту
+                vision_msg = await msg.reply_text("🖼️ Аналізую зображення + підпис...")
+                largest_photo = msg.photo[-1]
+                extracted = await extract_text_from_image(context.bot, largest_photo.file_id)
+                if extracted:
+                    raw_text = f"{raw_text}\n\n[Вміст зображення]: {extracted}"
+                await vision_msg.delete()
             
             if "threads.net" in raw_text or "threads.com" in raw_text:
                 tmp_msg = await msg.reply_text("🌐 Виявлено посилання Threads. Перевіряю доступ до API...")
@@ -122,14 +217,41 @@ async def handle_message(update, context, user_states: dict):
                     return
                 
                 await tmp_msg.edit_text("🌐 Отримую оригінальний текст поста через API...")
-                post_text = await threads_service.get_post_text(raw_text)
-                if post_text:
-                    raw_text = f"Отримано з Threads:\n{post_text}"
-                    await tmp_msg.edit_text("✅ Текст поста з Threads успішно завантажено через API.")
+                post_data = await threads_service.get_post_data(raw_text)
+                if post_data:
+                    post_text = post_data.get("text")       # може бути None
+                    post_image_url = post_data.get("image_url")
+
+                    # Аналізуємо зображення якщо воно є (завжди)
+                    img_description = None
+                    if post_image_url:
+                        await tmp_msg.edit_text("🖼️ Аналізую зображення поста...")
+                        img_description = await analyze_image_from_url(post_image_url)
+
+                    # Формуємо фінальний текст для аналізу
+                    parts = []
+                    if post_text:
+                        parts.append(f"Отримано з Threads:\n{post_text}")
+                    if img_description:
+                        parts.append(f"[Зображення до поста]: {img_description}")
+
+                    if parts:
+                        raw_text = "\n\n".join(parts)
+                        if post_text and img_description:
+                            await tmp_msg.edit_text("✅ Текст + зображення поста з Threads завантажено.")
+                        elif img_description:
+                            await tmp_msg.edit_text("✅ Пост без тексту — проаналізовано зображення.")
+                        else:
+                            await tmp_msg.edit_text("✅ Інформація з поста Threads успішно завантажено.")
+                    else:
+                        await tmp_msg.edit_text("❌ Пост не містить ні тексту, ні інформативного зображення.")
+                        user_states[uid]["action"] = None
+                        return
                 else:
-                    await tmp_msg.edit_text("❌ Не вдалося отримати текст із посилання Threads через API. Можливо, пост приватний або видалений.")
+                    await tmp_msg.edit_text("❌ Не вдалося отримати інформацію з поста Threads. Можливо, пост приватний або видалений.")
                     user_states[uid]["action"] = None
                     return
+
             
             # 2. Визначення джерела (репост чи ні) з перевірками на None
             claim = raw_text
@@ -212,8 +334,9 @@ async def handle_message(update, context, user_states: dict):
                     )
 
                 verified, unverified = filter_sources(raw)
+                video_analysis = state.get("video_analysis")
                 res = await call_base_gpt(
-                    claim, verified, unverified, os.getenv("MODEL_NAME"), uid
+                    claim, verified, unverified, os.getenv("MODEL_NAME"), uid, video_analysis
                 )
             
             else: # Perplexity
