@@ -201,6 +201,26 @@
 
     <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="compress_video">
+<a class="viewcode-back" href="../../utils.html#utils.helpers.compress_video">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compress_video</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Стискає відео до 480p та знижує бітрейт для економії токенів та лімітів API.&quot;&quot;&quot;</span>
+    <span class="n">ffmpeg_exe</span> <span class="o">=</span> <span class="n">imageio_ffmpeg</span><span class="o">.</span><span class="n">get_ffmpeg_exe</span><span class="p">()</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ffmpeg_exe</span><span class="p">,</span>
+        <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="n">input_path</span><span class="p">,</span>
+        <span class="s2">&quot;-vf&quot;</span><span class="p">,</span> <span class="s2">&quot;scale=-2:480&quot;</span><span class="p">,</span> <span class="c1"># 480p по висоті</span>
+        <span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;libx264&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-crf&quot;</span><span class="p">,</span> <span class="s2">&quot;30&quot;</span><span class="p">,</span>          <span class="c1"># високий рівень стиснення</span>
+        <span class="s2">&quot;-preset&quot;</span><span class="p">,</span> <span class="s2">&quot;veryfast&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="s2">&quot;5&quot;</span><span class="p">,</span>             <span class="c1"># 5 кадрів на секунду (достатньо для ШІ)</span>
+        <span class="s2">&quot;-an&quot;</span><span class="p">,</span>                 <span class="c1"># прибираємо звук для зменшення ваги</span>
+        <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+        <span class="n">output_path</span>
+    <span class="p">]</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">)</span></div>
+
 </pre></div>
 
            </div>

@@ -97,13 +97,17 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncOpenAI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">together</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncTogether</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ukraine_time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ukraine_time</span><span class="p">,</span> <span class="n">compress_video</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_ai_usage</span>
 
 <span class="n">today</span> <span class="o">=</span> <span class="n">get_ukraine_time</span><span class="p">()</span>
 <span class="n">_ai_session</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="n">openai_client</span> <span class="o">=</span> <span class="n">AsyncOpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">))</span>
 <span class="n">together_client</span> <span class="o">=</span> <span class="n">AsyncTogether</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TOGETHER_API_KEY&quot;</span><span class="p">))</span>
+<span class="n">openrouter_client</span> <span class="o">=</span> <span class="n">AsyncOpenAI</span><span class="p">(</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OpenRouter_API&quot;</span><span class="p">),</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://openrouter.ai/api/v1&quot;</span>
+<span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">today</span><span class="p">)</span>
 
 <div class="viewcode-block" id="generate_search_query">
@@ -317,19 +321,27 @@
 <div class="viewcode-block" id="analyze_video_with_together">
 <a class="viewcode-back" href="../../services.html#services.ai_service.analyze_video_with_together">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_video_with_together</span><span class="p">(</span><span class="n">video_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує відео через модель Google Gemma 3 (Together AI).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Аналізує відео через модель Qwen 3.6 (через OpenRouter).&quot;&quot;&quot;</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-    
-    <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TOGETHER_API_KEY&quot;</span><span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
     
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">video_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">video_b64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="c1"># Стискаємо відео перед відправкою, щоб уникнути лімітів</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+            <span class="n">compressed_path</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">name</span>
         
-        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;google/gemma-3n-E4B-it&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="n">compress_video</span><span class="p">(</span><span class="n">video_path</span><span class="p">,</span> <span class="n">compressed_path</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">video_b64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">compressed_path</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">compressed_path</span><span class="p">)</span>
+        
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openrouter_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;qwen/qwen3.6-35b-a3b&quot;</span><span class="p">,</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
                 <span class="p">{</span>
                     <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
@@ -343,35 +355,18 @@
                     <span class="p">]</span>
                 <span class="p">}</span>
             <span class="p">],</span>
-            <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span>
-            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
-        <span class="p">}</span>
+            <span class="n">extra_headers</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;HTTP-Referer&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/vanta/FactChecker&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Title&quot;</span><span class="p">:</span> <span class="s2">&quot;FactChecker Bot&quot;</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
         
-        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
-        <span class="p">}</span>
-        
-        <span class="n">session</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_ai_session</span><span class="p">()</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;https://api.together.xyz/v1/chat/completions&quot;</span><span class="p">,</span>
-            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
-            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="mi">180</span>
-        <span class="p">)</span> <span class="k">as</span> <span class="n">resp</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
-                <span class="n">text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
-                <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Together AI Video API Error: </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка API (</span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">): Неможливо проаналізувати відео.&quot;</span>
-            
-            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;choices&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;message&quot;</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception in analyze_video_with_together: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка обробки відео: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception in analyze_video_with_openrouter: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Помилка обробки відео (OpenRouter): </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="extract_factors_from_video_analysis">
@@ -380,10 +375,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Витягує ключові факти з детального опису відео для пошуку.&quot;&quot;&quot;</span>
     <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">&quot;Ти помічник, який витягує ключові фактологічні деталі з опису відео для подальшого фактчекінгу.</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="s2">&quot;Якщо в описі відео немає нічого, що можна було б перевірити як факт (наприклад, це відео з котиком, &quot;</span>
-        <span class="s2">&quot;мем, випадковий запис гри, музичний кліп без заяв, чи просто розважальне відео), поверни РІВНО ОДНУ фразу: NO_FACTUAL_CONTENT</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-        <span class="s2">&quot;Якщо ж відео містить заяви, події (наприклад, вибухи, протести, заяви політиків, новини), &quot;</span>
-        <span class="s2">&quot;сформулюй 2-4 речення з ключовими фактами, які потрібно перевірити в інтернеті. Пиши українською.&quot;</span>
+        <span class="s2">&quot;Сформулюй 2-4 речення з ключовими фактами або просто детальним описом подій у відео, які можна було б знайти в новинах чи соцмережах. &quot;</span>
+        <span class="s2">&quot;Навіть якщо відео здається розважальним, все одно опиши ключові дії та об&#39;єкти. Пиши українською.&quot;</span>
     <span class="p">)</span>
     
     <span class="k">try</span><span class="p">:</span>
@@ -417,10 +410,50 @@
     <span class="k">return</span> <span class="n">_ai_session</span></div>
 
 
+<div class="viewcode-block" id="format_together_response">
+<a class="viewcode-back" href="../../services.html#services.ai_service.format_together_response">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_together_response</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Форматує відповідь від fine-tuned моделі для Telegram.</span>
+<span class="sd">    </span>
+<span class="sd">    Перетворює сирий текст з полями ОБҐРУНТУВАННЯ, АРГУМЕНТИ тощо </span>
+<span class="sd">    на красиво відформатоване повідомлення з емодзі та Markdown.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Додаємо емодзі та жирний шрифт до ключових заголовків</span>
+    <span class="n">formatted</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;ОБҐРУНТУВАННЯ:&quot;</span><span class="p">,</span> <span class="s2">&quot;💡 **ОБҐРУНТУВАННЯ:**&quot;</span><span class="p">)</span>
+    <span class="n">formatted</span> <span class="o">=</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;АРГУМЕНТИ:&quot;</span><span class="p">,</span> <span class="s2">&quot;📊 **АРГУМЕНТИ:**&quot;</span><span class="p">)</span>
+    <span class="n">formatted</span> <span class="o">=</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;МАРКЕРИ МАНІПУЛЯЦІЇ:&quot;</span><span class="p">,</span> <span class="s2">&quot;🚩 **МАРКЕРИ МАНІПУЛЯЦІЇ:**&quot;</span><span class="p">)</span>
+    <span class="n">formatted</span> <span class="o">=</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;ПІДСУМОК:&quot;</span><span class="p">,</span> <span class="s2">&quot;📝 **ПІДСУМОК:**&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Окремо виділяємо ВЕРДИКТ у кінці повідомлення</span>
+    <span class="k">if</span> <span class="s2">&quot;ВЕРДИКТ:&quot;</span> <span class="ow">in</span> <span class="n">formatted</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">formatted</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;ВЕРДИКТ:&quot;</span><span class="p">)</span>
+        <span class="n">main_body</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">verdict_val</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        
+        <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;🔍&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;FAKE&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span> <span class="ow">or</span> <span class="s2">&quot;ФЕЙК&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;❌&quot;</span>
+        <span class="k">elif</span> <span class="s2">&quot;TRUE&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span> <span class="ow">or</span> <span class="s2">&quot;ПРАВДА&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;✅&quot;</span>
+        <span class="k">elif</span> <span class="s2">&quot;MANIPULATION&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span> <span class="ow">or</span> <span class="s2">&quot;МАНІПУЛЯЦІЯ&quot;</span> <span class="ow">in</span> <span class="n">verdict_val</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;⚠️&quot;</span>
+            
+        <span class="n">formatted</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">main_body</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;───────────────────</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">emoji</span><span class="si">}</span><span class="s2"> **ВЕРДИКТ:** `</span><span class="si">{</span><span class="n">verdict_val</span><span class="si">}</span><span class="s2">`&quot;</span>
+        <span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">formatted</span></div>
+
+
 <div class="viewcode-block" id="call_together">
 <a class="viewcode-back" href="../../services.html#services.ai_service.call_together">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_together</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">uid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Together AI (зазвичай для локально натренованих моделей).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Together AI (для нової fine-tuned моделі Llama 3.1 70B).</span>
+<span class="sd">    </span>
+<span class="sd">    Використовує специфічний системний промпт та структуру запиту, </span>
+<span class="sd">    на якій навчалася модель (на основі val_100.jsonl).</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        claim (str): Текст повідомлення/новини для перевірки.</span>
@@ -428,27 +461,32 @@
 <span class="sd">        uid (int): ID користувача для логування використання.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: Відповідь моделі (вердикт та аналіз).</span>
+<span class="sd">        str: Відформатована відповідь моделі з вердиктом та аргументами.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, &quot;</span>
+        <span class="s2">&quot;надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Текст новини для аналізу: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">together_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> 
         <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> 
-                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Ти аналітик новин. Визнач, чи є надана новина &quot;</span>
-                           <span class="s2">&quot;правдивою чи фейковою.&quot;</span>
-            <span class="p">},</span> 
-            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Текст новини: : </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sys_prompt</span><span class="p">},</span> 
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">}</span>
         <span class="p">],</span>
         <span class="n">temperature</span><span class="o">=</span><span class="mf">0.1</span> 
     <span class="p">)</span>
 
-    <span class="c1"># ДОДАЄМО ЛОГУВАННЯ</span>
+    <span class="c1"># Логування використання токенів</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s1">&#39;usage&#39;</span><span class="p">):</span>
         <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span><span class="s2">&quot;TOGETHER&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
     
-    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span></div>
+    <span class="n">raw_content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+    
+    <span class="c1"># Красиво форматуємо вивід під Telegram</span>
+    <span class="k">return</span> <span class="n">format_together_response</span><span class="p">(</span><span class="n">raw_content</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="call_openai_ft">
@@ -517,7 +555,7 @@
         <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;No additional web mentions found.&quot;</span>
 
     <span class="k">if</span> <span class="n">video_analysis</span><span class="p">:</span>
-        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">--- INITIAL VIDEO ANALYSIS (Gemma 3):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">--- INITIAL VIDEO ANALYSIS (Qwen 3.6):</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">context_text</span> <span class="o">+=</span> <span class="n">video_analysis</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
 
     <span class="n">sys_instr</span> <span class="o">=</span> <span class="p">(</span>
