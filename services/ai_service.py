@@ -22,13 +22,17 @@ import aiohttp
 from openai import AsyncOpenAI
 from together import AsyncTogether
 
-from utils.helpers import get_ukraine_time
+from utils.helpers import get_ukraine_time, compress_video
 from utils.logger import log_ai_usage
 
 today = get_ukraine_time()
 _ai_session = None
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 together_client = AsyncTogether(api_key=os.getenv("TOGETHER_API_KEY"))
+openrouter_client = AsyncOpenAI(
+    api_key=os.getenv("OpenRouter_API"),
+    base_url="https://openrouter.ai/api/v1"
+)
 print(today)
 
 async def generate_search_query(user_text: str, model_id: str = "gpt-4o-mini") -> str:
@@ -231,19 +235,27 @@ async def analyze_image_from_url(image_url: str) -> str | None:
         return None
 
 async def analyze_video_with_together(video_path: str) -> str:
-    """Аналізує відео через модель Google Gemma 3 (Together AI)."""
+    """Аналізує відео через модель Qwen 3.6 (через OpenRouter)."""
     import base64
-    import os
-    
-    api_key = os.getenv("TOGETHER_API_KEY")
+    import tempfile
     
     try:
-        with open(video_path, "rb") as f:
-            video_b64 = base64.b64encode(f.read()).decode("utf-8")
+        # Стискаємо відео перед відправкою, щоб уникнути лімітів
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            compressed_path = tmp.name
         
-        payload = {
-            "model": "google/gemma-3n-E4B-it",
-            "messages": [
+        compress_video(video_path, compressed_path)
+        
+        try:
+            with open(compressed_path, "rb") as f:
+                video_b64 = base64.b64encode(f.read()).decode("utf-8")
+        finally:
+            if os.path.exists(compressed_path):
+                os.remove(compressed_path)
+        
+        response = await openrouter_client.chat.completions.create(
+            model="qwen/qwen3.6-35b-a3b",
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -257,44 +269,25 @@ async def analyze_video_with_together(video_path: str) -> str:
                     ]
                 }
             ],
-            "max_tokens": 1500,
-            "temperature": 0.2
-        }
+            extra_headers={
+                "HTTP-Referer": "https://github.com/vanta/FactChecker",
+                "X-Title": "FactChecker Bot"
+            }
+        )
         
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        session = await get_ai_session()
-        async with session.post(
-            "https://api.together.xyz/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=180
-        ) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                from utils.logger import logger
-                logger.error(f"Together AI Video API Error: {resp.status} - {text}")
-                return f"Помилка API ({resp.status}): Неможливо проаналізувати відео."
-            
-            data = await resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
             
     except Exception as e:
         from utils.logger import logger
-        logger.error(f"Exception in analyze_video_with_together: {e}")
-        return f"Помилка обробки відео: {str(e)}"
+        logger.error(f"Exception in analyze_video_with_openrouter: {e}")
+        return f"Помилка обробки відео (OpenRouter): {str(e)}"
 
 async def extract_factors_from_video_analysis(analysis: str) -> str:
     """Витягує ключові факти з детального опису відео для пошуку."""
     sys_prompt = (
         "Ти помічник, який витягує ключові фактологічні деталі з опису відео для подальшого фактчекінгу.\n"
-        "Якщо в описі відео немає нічого, що можна було б перевірити як факт (наприклад, це відео з котиком, "
-        "мем, випадковий запис гри, музичний кліп без заяв, чи просто розважальне відео), поверни РІВНО ОДНУ фразу: NO_FACTUAL_CONTENT\n\n"
-        "Якщо ж відео містить заяви, події (наприклад, вибухи, протести, заяви політиків, новини), "
-        "сформулюй 2-4 речення з ключовими фактами, які потрібно перевірити в інтернеті. Пиши українською."
+        "Сформулюй 2-4 речення з ключовими фактами або просто детальним описом подій у відео, які можна було б знайти в новинах чи соцмережах. "
+        "Навіть якщо відео здається розважальним, все одно опиши ключові дії та об'єкти. Пиши українською."
     )
     
     try:
@@ -324,8 +317,45 @@ async def get_ai_session() -> aiohttp.ClientSession:
         _ai_session = aiohttp.ClientSession()
     return _ai_session
 
+def format_together_response(text: str) -> str:
+    """Форматує відповідь від fine-tuned моделі для Telegram.
+    
+    Перетворює сирий текст з полями ОБҐРУНТУВАННЯ, АРГУМЕНТИ тощо 
+    на красиво відформатоване повідомлення з емодзі та Markdown.
+    """
+    # Додаємо емодзі та жирний шрифт до ключових заголовків
+    formatted = text.replace("ОБҐРУНТУВАННЯ:", "💡 **ОБҐРУНТУВАННЯ:**")
+    formatted = formatted.replace("АРГУМЕНТИ:", "📊 **АРГУМЕНТИ:**")
+    formatted = formatted.replace("МАРКЕРИ МАНІПУЛЯЦІЇ:", "🚩 **МАРКЕРИ МАНІПУЛЯЦІЇ:**")
+    formatted = formatted.replace("ПІДСУМОК:", "📝 **ПІДСУМОК:**")
+    
+    # Окремо виділяємо ВЕРДИКТ у кінці повідомлення
+    if "ВЕРДИКТ:" in formatted:
+        parts = formatted.split("ВЕРДИКТ:")
+        main_body = parts[0].strip()
+        verdict_val = parts[1].strip().upper().replace(".", "")
+        
+        emoji = "🔍"
+        if "FAKE" in verdict_val or "ФЕЙК" in verdict_val:
+            emoji = "❌"
+        elif "TRUE" in verdict_val or "ПРАВДА" in verdict_val:
+            emoji = "✅"
+        elif "MANIPULATION" in verdict_val or "МАНІПУЛЯЦІЯ" in verdict_val:
+            emoji = "⚠️"
+            
+        formatted = (
+            f"{main_body}\n\n"
+            f"───────────────────\n"
+            f"{emoji} **ВЕРДИКТ:** `{verdict_val}`"
+        )
+        
+    return formatted
+
 async def call_together(claim: str, model_id: str, uid: int) -> str:
-    """Надсилає запит до Together AI (зазвичай для локально натренованих моделей).
+    """Надсилає запит до Together AI (для нової fine-tuned моделі Llama 3.1 70B).
+    
+    Використовує специфічний системний промпт та структуру запиту, 
+    на якій навчалася модель (на основі val_100.jsonl).
     
     Args:
         claim (str): Текст повідомлення/новини для перевірки.
@@ -333,27 +363,32 @@ async def call_together(claim: str, model_id: str, uid: int) -> str:
         uid (int): ID користувача для логування використання.
 
     Returns:
-        str: Відповідь моделі (вердикт та аналіз).
+        str: Відформатована відповідь моделі з вердиктом та аргументами.
     """
+    
+    sys_prompt = (
+        "Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, "
+        "надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт."
+    )
+    user_prompt = f"Текст новини для аналізу: {claim}"
 
     response = await together_client.chat.completions.create(
         model=model_id, 
         messages=[
-            {
-                "role": "system", 
-                "content": "Ти аналітик новин. Визнач, чи є надана новина "
-                           "правдивою чи фейковою."
-            }, 
-            {"role": "user", "content": f"Текст новини: : {claim}"}
+            {"role": "system", "content": sys_prompt}, 
+            {"role": "user", "content": user_prompt}
         ],
         temperature=0.1 
     )
 
-    # ДОДАЄМО ЛОГУВАННЯ
+    # Логування використання токенів
     if hasattr(response, 'usage'):
         await log_ai_usage("TOGETHER", model_id, response.usage, uid)
     
-    return response.choices[0].message.content
+    raw_content = response.choices[0].message.content
+    
+    # Красиво форматуємо вивід під Telegram
+    return format_together_response(raw_content)
 
 async def call_openai_ft(claim: str, model_id: str, user_id: int) -> str:
     """Надсилає запит до Fine-Tuned (додатково натренованої) моделі OpenAI.
@@ -416,7 +451,7 @@ async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: l
         context_text += "No additional web mentions found."
 
     if video_analysis:
-        context_text += "\n\n--- INITIAL VIDEO ANALYSIS (Gemma 3):\n"
+        context_text += "\n\n--- INITIAL VIDEO ANALYSIS (Qwen 3.6):\n"
         context_text += video_analysis + "\n"
 
     sys_instr = (

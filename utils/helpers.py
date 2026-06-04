@@ -111,3 +111,20 @@ def convert_to_wav(input_path: str, output_path: str):
     ]
 
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def compress_video(input_path: str, output_path: str):
+    """Стискає відео до 480p та знижує бітрейт для економії токенів та лімітів API."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    command = [
+        ffmpeg_exe,
+        "-i", input_path,
+        "-vf", "scale=-2:480", # 480p по висоті
+        "-c:v", "libx264",
+        "-crf", "30",          # високий рівень стиснення
+        "-preset", "veryfast",
+        "-r", "5",             # 5 кадрів на секунду (достатньо для ШІ)
+        "-an",                 # прибираємо звук для зменшення ваги
+        "-y",
+        output_path
+    ]
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

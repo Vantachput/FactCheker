@@ -111,19 +111,16 @@ async def handle_message(update, context, user_states: dict):
     if state.get("action") == "WAITING":
         try:
             # 1. Універсальне отримання тексту
-            # Важливо: використовуємо getattr, щоб уникнути помилок, 
-            # якщо message чомусь порожній
             msg = update.message
             raw_text = msg.text or msg.caption or ""
-            # 🔥 NEW: обробка voice/audio
+            
+            # 1а. Обробка voice/audio
             if not raw_text and (msg.voice or msg.audio):
                 status_msg = await msg.reply_text("🎤 Розпізнаю аудіо...")
-
                 try:
                     file = await context.bot.get_file(
                         msg.voice.file_id if msg.voice else msg.audio.file_id
                     )
-
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
                         await file.download_to_drive(tmp.name)
                         wav_path = tmp.name.replace(".ogg", ".wav")
@@ -131,13 +128,8 @@ async def handle_message(update, context, user_states: dict):
                         audio_path = wav_path
 
                     transcript = await transcribe_audio(audio_path)
-
                     raw_text = transcript
-
-                    await status_msg.edit_text(
-                        f"📝 Розпізнано:\n\n{transcript[:200]}..."
-                    )
-
+                    await status_msg.edit_text(f"📝 Розпізнано:\n\n{transcript[:200]}...")
                 except Exception as e:
                     await status_msg.edit_text(f"❌ Помилка розпізнавання: {str(e)}")
                     return
@@ -146,14 +138,22 @@ async def handle_message(update, context, user_states: dict):
             if not raw_text and (msg.video or msg.video_note):
                 status_msg = await msg.reply_text("📥 Завантажую відео для аналізу...")
                 try:
-                    video_file = await context.bot.get_file(
-                        msg.video.file_id if msg.video else msg.video_note.file_id
-                    )
+                    video_obj = msg.video or msg.video_note
+                    if video_obj.file_size > 20 * 1024 * 1024:
+                        await status_msg.edit_text(
+                            "❌ Відео занадто велике (понад 20 МБ).\n\n"
+                            "Через обмеження Telegram, боти не можуть завантажувати файли більші за 20 МБ. "
+                            "Будь ласка, надішліть стиснене відео або коротший уривок."
+                        )
+                        user_states[uid]["action"] = None
+                        return
+
+                    video_file = await context.bot.get_file(video_obj.file_id)
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
                         await video_file.download_to_drive(tmp.name)
                         video_path = tmp.name
                     
-                    await status_msg.edit_text("🎥 Аналізую відео за допомогою спеціальної моделі (Gemma 3)...")
+                    await status_msg.edit_text("🎥 Аналізую відео за допомогою спеціальної моделі (Qwen 3.6)...")
                     video_analysis = await analyze_video_with_together(video_path)
                     
                     if "Помилка" in video_analysis:
@@ -164,15 +164,14 @@ async def handle_message(update, context, user_states: dict):
                     await status_msg.edit_text("🧠 Виділяю ключові факти для пошуку...")
                     factors = await extract_factors_from_video_analysis(video_analysis)
                     
-                    if not factors or "NO_FACTUAL_CONTENT" in factors:
-                        await status_msg.edit_text("❌ Це відео не містить фактичної інформації для перевірки (можливо, це розважальний контент або меми).")
+                    if not factors:
+                        await status_msg.edit_text("❌ Не вдалося виділити факти з аналізу відео.")
                         user_states[uid]["action"] = None
                         return
                     
                     raw_text = factors
                     user_states[uid]["video_analysis"] = video_analysis
-                    
-                    await status_msg.edit_text(f"✅ Відео проаналізовано. Знайдені ключові заяви/події:\n\n_{factors}_", parse_mode="Markdown")
+                    await status_msg.edit_text(f"✅ Відео проаналізовано. Знайдені ключові заяви:\n\n_{factors}_", parse_mode="Markdown")
 
                 except Exception as e:
                     await status_msg.edit_text(f"❌ Помилка обробки відео: {str(e)}")
