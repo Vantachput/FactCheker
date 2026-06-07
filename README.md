@@ -168,9 +168,9 @@ SERPER_API_KEY=your_serper_key            # https://serper.dev/api-key
 # ================================================================
 # Назви моделей
 # ================================================================
-MODEL_NAME=gpt-4o-mini
+MODEL_NAME=gpt-5-mini
 MODEL_GPT_4_1_mini=ft:gpt-4o-mini:...    # Ваша fine-tuned модель (якщо є)
-MODEL_TOGETHER_FT=meta-llama/Llama-3.1-8B-Instruct-Turbo
+MODEL_TOGETHER_FT=meta-llama/Llama-3.1-8B-Instruct-Turbo # Ваша fine-tuned модель (якщо є)
 
 # ================================================================
 # Адмін (Telegram user_id — для необмеженого доступу)
