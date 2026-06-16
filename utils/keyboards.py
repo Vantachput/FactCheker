@@ -17,7 +17,7 @@ def get_main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📝 Класифікувати", callback_data="menu_classify")],
         [InlineKeyboardButton("⚙️ Обрати спосіб", callback_data="menu_settings")],
-        [InlineKeyboardButton("ℹ️ Справка", callback_data="menu_help")]
+        [InlineKeyboardButton("ℹ️ Довідка", callback_data="menu_help")]
     ])
 
 def get_settings_menu() -> InlineKeyboardMarkup:
@@ -37,10 +37,11 @@ def get_ft_menu() -> InlineKeyboardMarkup:
     """Повертає меню вибору навчених (Fine-tuned) моделей.
     
     Returns:
-        InlineKeyboardMarkup: Кнопки для Llama та GPT-4o-mini.
+        InlineKeyboardMarkup: Кнопки для Llama, Gemma та GPT-4o-mini.
     """
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🦙 Llama 3.1 8B", callback_data="set_ft_together")],
+        [InlineKeyboardButton("💎 gemma-3-12b (smart)", callback_data="set_ft_gemma")],
         [InlineKeyboardButton("🤖 GPT-4o-mini", callback_data="set_ft_openai")],
         [InlineKeyboardButton("⬅️ Назад", callback_data="menu_settings")]
     ])

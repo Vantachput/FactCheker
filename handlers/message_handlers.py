@@ -301,6 +301,10 @@ async def handle_message(update, context, user_states: dict):
 
             res = ""
             if method == "together":
+                res = await call_together(claim, os.getenv("MODEL_TOGETHER_FT_2"), uid)
+                res += get_progress_bar(res)
+
+            elif method == "together_gemma":
                 res = await call_together(claim, os.getenv("MODEL_TOGETHER_FT"), uid)
                 res += get_progress_bar(res)
 

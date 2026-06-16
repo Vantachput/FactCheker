@@ -1,4 +1,3 @@
-# Повний остаточно виправлений tests/test_call_base_gpt.py
 import pytest
 from unittest.mock import patch, AsyncMock, ANY
 from services.ai_service import call_base_gpt

@@ -24,7 +24,7 @@ async def transcribe_audio(file_path: str) -> str:
         "model": "nova-3",
         "smart_format": "true",
         "punctuate": "true",
-        "detect_language": "true",   # 🔥 ключове для тебе
+        "detect_language": "true",   # Автовизначення мови
     }
 
     headers = {

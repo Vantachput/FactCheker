@@ -352,25 +352,38 @@ def format_together_response(text: str) -> str:
     return formatted
 
 async def call_together(claim: str, model_id: str, uid: int) -> str:
-    """Надсилає запит до Together AI (для нової fine-tuned моделі Llama 3.1 70B).
-    
-    Використовує специфічний системний промпт та структуру запиту, 
-    на якій навчалася модель (на основі val_100.jsonl).
-    
+    """Надсилає запит до Together AI для fine-tuned моделей (Llama 3.1 8B або gemma-3-12b).
+
+    Автоматично обирає правильний промпт та форматування залежно від моделі:
+    - Llama 3.1 8B (MODEL_TOGETHER_FT_2): простий промпт, відповідь одним словом
+      (формат даних training_data_balanced.jsonl).
+    - gemma-3-12b (MODEL_TOGETHER_FT): розгорнутий аналіз з обґрунтуванням та маркерами
+      маніпуляцій (формат даних val.jsonl, дистиляція від gemma-4-31b).
+
     Args:
         claim (str): Текст повідомлення/новини для перевірки.
         model_id (str): ID моделі на платформі Together.
         uid (int): ID користувача для логування використання.
 
     Returns:
-        str: Відформатована відповідь моделі з вердиктом та аргументами.
+        str: Відформатована відповідь моделі з вердиктом (та аргументами для gemma).
     """
-    
-    sys_prompt = (
-        "Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, "
-        "надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт."
-    )
-    user_prompt = f"Текст новини для аналізу: {claim}"
+    if not model_id:
+        return "⚠️ Помилка: ID моделі Together AI не знайдено в .env"
+
+    is_llama = "llama" in model_id.lower() or model_id == os.getenv("MODEL_TOGETHER_FT_2")
+
+    if is_llama:
+        # Промпт для Llama 3.1 8B — навчалась на training_data_balanced.jsonl
+        sys_prompt = "Ти аналітик новин. Визнач, чи є надана новина правдивою чи фейковою."
+        user_prompt = f"Текст новини: {claim}"
+    else:
+        # Промпт для gemma-3-12b — навчалась на val.jsonl (дистиляція від gemma-4-36b)
+        sys_prompt = (
+            "Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, "
+            "надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт."
+        )
+        user_prompt = f"Текст новини для аналізу: {claim}"
 
     response = await together_client.chat.completions.create(
         model=model_id, 
@@ -385,9 +398,22 @@ async def call_together(claim: str, model_id: str, uid: int) -> str:
     if hasattr(response, 'usage'):
         await log_ai_usage("TOGETHER", model_id, response.usage, uid)
     
-    raw_content = response.choices[0].message.content
+    raw_content = response.choices[0].message.content.strip()
     
-    # Красиво форматуємо вивід під Telegram
+    if is_llama:
+        # Для Llama повертаємо красиву коротку оцінку
+        verdict = raw_content
+        verdict_upper = verdict.upper().replace(".", "")
+        emoji = "🔍"
+        if "ПРАВДА" in verdict_upper or "TRUSTED" in verdict_upper or "TRUE" in verdict_upper:
+            emoji = "✅"
+            verdict = "ПРАВДА"
+        elif "ФЕЙК" in verdict_upper or "FAKE" in verdict_upper:
+            emoji = "❌"
+            verdict = "ФЕЙК"
+        return f"{emoji} **ВЕРДИКТ:** `{verdict}`"
+    
+    # Красиво форматуємо вивід під Telegram для Gemma
     return format_together_response(raw_content)
 
 async def call_openai_ft(claim: str, model_id: str, user_id: int) -> str:
@@ -448,6 +474,7 @@ async def call_base_gpt(claim: str, verified_srcs: list[str], unverified_srcs: l
     context_text += "\n--- GENERAL WEB SOURCES (Unverified/Contextual):\n"
     if unverified_srcs:
         context_text += "\n".join(unverified_srcs)
+    else:
         context_text += "No additional web mentions found."
 
     if video_analysis:

@@ -1,9 +1,19 @@
-# Повний виправлений tests/test_handle_message.py (з фіксом patch та context)
 import pytest
 from unittest.mock import AsyncMock, patch, ANY, MagicMock
 from handlers.message_handlers import handle_message
-from telegram import Update, Chat
+from telegram import Update
 from telegram.ext import ContextTypes
+
+
+def configure_mock_message(message):
+    """Допоміжний метод для налаштування мока повідомлення, щоб уникнути помилок із новими фічами ( Vision/Video/Audio )."""
+    message.caption = None
+    message.photo = None
+    message.video = None
+    message.video_note = None
+    message.voice = None
+    message.audio = None
+    message.forward_origin = None
 
 
 @pytest.mark.asyncio
@@ -23,8 +33,7 @@ async def test_handle_message_empty_text():
     update = AsyncMock(spec=Update)
     update.effective_user.id = 123
     update.message.text = ""
-    update.message.caption = None
-    update.message.forward_origin = None
+    configure_mock_message(update.message)
     update.message.reply_text = AsyncMock()
 
     await handle_message(update, None, user_states)
@@ -38,6 +47,7 @@ async def test_handle_message_forward_origin():
     update = AsyncMock(spec=Update)
     update.effective_user.id = 123
     update.message.text = "News"
+    configure_mock_message(update.message)
 
     # Мокуємо forward_origin з потрібними атрибутами згідно реальному коду
     forward_origin = MagicMock()
@@ -74,6 +84,7 @@ async def test_handle_message_limit_exceeded():
     update = AsyncMock(spec=Update)
     update.effective_user.id = 123
     update.message.text = "News"
+    configure_mock_message(update.message)
     status_msg = AsyncMock()
     update.message.reply_text = AsyncMock(return_value=status_msg)
 
@@ -92,6 +103,7 @@ async def test_handle_message_exception_handling():
     update = AsyncMock(spec=Update)
     update.effective_user.id = 123
     update.message.text = "News"
+    configure_mock_message(update.message)
     status_msg = AsyncMock()
     update.message.reply_text = AsyncMock(return_value=status_msg)
 
@@ -111,6 +123,7 @@ async def test_handle_message_successful_analysis():
     update = AsyncMock(spec=Update)
     update.effective_user.id = 123
     update.message.text = "News"
+    configure_mock_message(update.message)
     status_msg = AsyncMock()
     update.message.reply_text = AsyncMock()
 
@@ -133,3 +146,49 @@ async def test_handle_message_successful_analysis():
         reply_markup=ANY
     )
     assert update.message.reply_text.call_count >= 2  # статус + частини результату
+
+
+@pytest.mark.asyncio
+async def test_handle_message_together_llama():
+    user_states = {123: {"action": "WAITING", "method": "together"}}
+    update = AsyncMock(spec=Update)
+    update.effective_user.id = 123
+    update.message.text = "News"
+    configure_mock_message(update.message)
+    status_msg = AsyncMock()
+    update.message.reply_text = AsyncMock(return_value=status_msg)
+
+    context = AsyncMock(spec=ContextTypes.DEFAULT_TYPE)
+    context.bot.send_message = AsyncMock()
+
+    with patch('handlers.message_handlers.check_and_increment_limit', return_value=(True, None)), \
+         patch('handlers.message_handlers.call_together', return_value="Together Result") as mock_call_together, \
+         patch.dict('os.environ', {'MODEL_TOGETHER_FT_2': 'mock-llama-model'}):
+
+        await handle_message(update, context, user_states)
+
+    mock_call_together.assert_called_with("News", "mock-llama-model", 123)
+    assert user_states[123]["action"] is None
+
+
+@pytest.mark.asyncio
+async def test_handle_message_together_gemma():
+    user_states = {123: {"action": "WAITING", "method": "together_gemma"}}
+    update = AsyncMock(spec=Update)
+    update.effective_user.id = 123
+    update.message.text = "News"
+    configure_mock_message(update.message)
+    status_msg = AsyncMock()
+    update.message.reply_text = AsyncMock(return_value=status_msg)
+
+    context = AsyncMock(spec=ContextTypes.DEFAULT_TYPE)
+    context.bot.send_message = AsyncMock()
+
+    with patch('handlers.message_handlers.check_and_increment_limit', return_value=(True, None)), \
+         patch('handlers.message_handlers.call_together', return_value="Gemma Result") as mock_call_together, \
+         patch.dict('os.environ', {'MODEL_TOGETHER_FT': 'mock-gemma-model'}):
+
+        await handle_message(update, context, user_states)
+
+    mock_call_together.assert_called_with("News", "mock-gemma-model", 123)
+    assert user_states[123]["action"] is None

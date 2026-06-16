@@ -1,6 +1,6 @@
 # 🕵️ AI Fact-Checker — Telegram-бот для виявлення дезінформації
 
-Інтелектуальна система перевірки новин та боротьби з дезінформацією. Бот приймає будь-який текст або переслане повідомлення та повертає деталізований вердикт на основі аналізу перевірених медіа-джерел та моделей штучного інтелекту.
+Інтелектуальна система перевірки новин та боротьби з дезінформацією. Бот приймає будь-який текст, переслані повідомлення, зображення (з текстом чи без), аудіозаписи, голосові повідомлення, відео, кружечки, а також посилання на публікації в Threads, та повертає деталізований аналіз і вердикт на основі перевірених медіа-джерел та передових моделей штучного інтелекту.
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue?logo=python)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
@@ -43,6 +43,9 @@ copy .env.example .env          # Windows
 # 5. Запустити бота
 python main.py
 ```
+
+> [!NOTE]
+> Для обробки аудіо (конвертація у WAV) та відео (стиснення) проєкт використовує утиліту `ffmpeg`, яка автоматично постачається через бібліотеку `imageio-ffmpeg`. Додатково встановлювати `ffmpeg` у систему не потрібно.
 
 ---
 
@@ -121,13 +124,16 @@ pip install -r requirements.txt
 | Бібліотека | Призначення |
 |---|---|
 | `python-telegram-bot` | Telegram Bot API |
-| `openai` | Клієнт OpenAI (GPT-4o) |
-| `together` | Клієнт Together AI (Llama) |
+| `openai` | Клієнт OpenAI (GPT-4o, GPT-5-mini, Vision) |
+| `together` | Клієнт Together AI (Llama, Gemma) |
 | `aiohttp` | Асинхронні HTTP-запити |
 | `python-dotenv` | Завантаження змінних середовища з `.env` |
 | `aiosqlite` | Асинхронна робота з SQLite |
 | `pytest` + `pytest-asyncio` | Тестування |
-| `ruff` | Лінтинг та форматування |
+| `ruff` | Лінтинг та форматування коду |
+| `imageio-ffmpeg` | Автоматичне завантаження та запуск бінарника FFmpeg для обробки аудіо та відео |
+| `aiofiles` | Асинхронна робота з файловою системою (для запису аналітики без блокувань) |
+| `pytz` | Коректна робота з часовими поясами (часовий пояс України) |
 
 ---
 
@@ -143,8 +149,6 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-> Якщо файл `.env.example` відсутній — створіть файл `.env` вручну.
-
 Відредагуйте `.env` та заповніть усі значення:
 
 ```env
@@ -158,7 +162,18 @@ BOT_TOKEN=your_telegram_bot_token         # Отримати у @BotFather
 # ================================================================
 OPENAI_API_KEY=your_openai_key            # https://platform.openai.com/api-keys
 TOGETHER_API_KEY=your_together_key        # https://api.together.xyz/settings/api-keys
-PERPLEXITY_API_KEY=your_perplexity_key   # https://www.perplexity.ai/settings/api
+TOGETHER_NO_BANNER=1                      # Вимкнути консольний банер Together AI
+
+PERPLEXITY_API_KEY=your_perplexity_key    # https://www.perplexity.ai/settings/api
+OpenRouter_API=your_openrouter_key        # Ключ OpenRouter (для Qwen відео аналізу): https://openrouter.ai/keys
+DEEPGRAM_API_KEY=your_deepgram_key        # Ключ Deepgram (транскрибування аудіо): https://console.deepgram.com/
+
+# ================================================================
+# Threads API (для завантаження та аналізу постів Threads)
+# ================================================================
+THREADS_ACCESS_TOKEN=your_threads_access_token
+THREADS_APP_ID=your_threads_app_id
+THREADS_API_VERSION=v1.0
 
 # ================================================================
 # Пошук (Google через Serper)
@@ -168,9 +183,13 @@ SERPER_API_KEY=your_serper_key            # https://serper.dev/api-key
 # ================================================================
 # Назви моделей
 # ================================================================
-MODEL_NAME=gpt-4o-mini
-MODEL_GPT_4_1_mini=ft:gpt-4o-mini:...    # Ваша fine-tuned модель (якщо є)
-MODEL_TOGETHER_FT=meta-llama/Llama-3.1-8B-Instruct-Turbo
+MODEL_NAME=gpt-5-mini                     # Базова модель для RAG аналізу
+MODEL_PREVIEW=gpt-4o-mini-search-preview  # Модель для прев'ю пошуку
+
+# Fine-tuned моделі
+MODEL_GPT_4_1_mini=ft:gpt-4o-mini:...     # Fine-tuned модель OpenAI (якщо є)
+MODEL_TOGETHER_FT=vantachput_c1a9/...     # Fine-tuned Gemma модель (together_gemma)
+MODEL_TOGETHER_FT_2=vantachput_c1a9/...   # Fine-tuned Llama модель (together)
 
 # ================================================================
 # Адмін (Telegram user_id — для необмеженого доступу)
@@ -187,21 +206,33 @@ ADMIN_ID=your_telegram_user_id
 | **Together AI** | Зайдіть на [api.together.xyz](https://api.together.xyz/settings/api-keys) → Create an API key |
 | **Perplexity** | Зайдіть на [perplexity.ai](https://www.perplexity.ai/settings/api) → Generate |
 | **Serper (Google)** | Зайдіть на [serper.dev](https://serper.dev) → Sign in → Get API key |
+| **OpenRouter** | Зареєструйтесь на [openrouter.ai](https://openrouter.ai) → Ключі API → Create Key |
+| **Deepgram** | Зареєструйтесь на [deepgram.com](https://deepgram.com) → API Keys → Create Key |
+| **Threads API** | Налаштуйте доступ через Meta for Developers (Graph API) для отримання токена |
 
 ---
 
 ### Крок 5 — База даних
 
-Проєкт використовує **SQLite** — файлова база даних, яка **не потребує встановлення окремого сервера**.
+Проєкт використовує **SQLite** — локальну файлову базу даних, яка **не потребує встановлення окремого сервера**.
 
-База даних `bot_data.db` **створюється автоматично** при першому запуску бота (функція `init_db()` в `database/db_manager.py`). Жодних додаткових налаштувань не потрібно.
+База даних `bot_data.db` **створюється автоматично** при першому запуску бота (функція `init_db()` в `database/db_manager.py`).
 
 ```
 bot_data.db
-└── таблиця `usage`  — зберігає денні ліміти використання AI-моделей
+└── таблиця `usage`  — зберігає добову активність користувачів щодо використання AI-моделей та лімітів
 ```
 
-> Файл `bot_data.db` додано до `.gitignore` і не відстежується у Git.
+#### 🛡️ Денні ліміти (налаштовані у `database/db_manager.py`)
+Бот обмежує кількість щоденних запитів для платних або ресурсномістких моделей Perplexity:
+* **`sonar` (Базовий)** — безлімітно (ліміт встановлено на `999999`).
+* **`sonar-reasoning-pro`** — `1` запит на день для одного користувача.
+* **`sonar-deep-research`** — `0` запитів на день (повністю вимкнено для звичайних користувачів).
+* **Базові моделі (`Base`), Fine-tuned та інші** — ліміт `1000000` (фактично безлімітно).
+
+> [!TIP]
+> Користувач, чий Telegram ID збігається зі значенням `ADMIN_ID` у файлі `.env`, має **повний та необмежений доступ** до всіх моделей (включаючи `sonar-deep-research`), і лічильник лімітів для нього не збільшується.
+> Добові ліміти автоматично оновлюються (обнуляються) о 00:00 кожного дня.
 
 ---
 
@@ -212,118 +243,91 @@ python main.py
 ```
 
 Після успішного запуску ви побачите у терміналі:
-
 ```
 🚀 Бот запущений асинхронно...
 ```
-
 Бот тепер слухає повідомлення через Telegram polling. Зупинити — `Ctrl + C`.
 
 ---
 
 ## 🧰 Базові команди та операції
 
-### Запуск та зупинка
+Для зручності розробки в проєкті наявний `Makefile` (працює на Windows через Git Bash або утиліту `make`, а також нативно на Linux/macOS).
+
+### Makefile Команди
 
 | Дія | Команда |
 |---|---|
-| Запустити бота | `python main.py` |
-| Зупинити бота | `Ctrl + C` |
-
-### Тести
-
-```bash
-# Запустити всі тести
-pytest
-
-# З виводом покриття коду
-pytest --cov=. --cov-report=term-missing
-
-# Запустити конкретний тест-файл
-pytest tests/test_filter_sources.py -v
-```
-
-### Лінтинг і форматування
-
-```bash
-# Перевірити стиль коду (Ruff)
-ruff check .
-
-# Автоматично виправити виправні помилки
-ruff check --fix .
-
-# Відформатувати код (Black-сумісний форматер)
-ruff format .
-```
-
-### Документація (Sphinx)
-
-```bash
-# Локальна збірка HTML-документації (українська)
-cd docs
-python -m sphinx -b html source build/html
-
-# Локальна збірка (англійська)
-python -m sphinx -b html source_en build/html_en
-
-# Відкрити результат (Windows)
-start build\html\index.html
-```
-
-### Безпека
-
-```bash
-# Аналіз вразливостей у коді (Bandit)
-bandit -r . --exclude .venv,tests
-
-# Перевірка залежностей на відомі вразливості (Safety)
-safety check -r requirements.txt
-```
-
-### Git — типовий робочий процес
-
-```bash
-git checkout -b feature/my-feature   # Створити нову гілку
-git add .
-git commit -m "feat: опис змін"
-git push origin feature/my-feature
-# Відкрийте Pull Request на GitHub
-```
+| Запустити бота локально | `make dev` або `python main.py` |
+| Запустити всі модульні тести | `make test` або `pytest` |
+| Запустити тести з покриттям | `make test-cov` |
+| Перевірити стиль коду (Ruff) | `make lint` |
+| Автоматично виправити помилки стилю | `make lint-fix` |
+| Відформатувати код (Ruff) | `make format` |
+| Зібрати HTML-документацію Sphinx | `make docs` |
+| Запустити профайлінг швидкодії | `make profile` |
+| Створити резервну копію бази даних SQLite | `make backup` |
+| Деплой оновлень на сервер (Linux) | `make deploy` |
+| Перезапустити сервіс бота на сервері | `make restart` |
+| Переглянути системний статус бота | `make status` |
+| Логи роботи бота на сервері | `make logs` |
 
 ---
 
 ## ⚙️ Принцип роботи (Архітектура)
 
-Бот використовує **гібридну архітектуру** з кількома AI-провайдерами, між якими користувач може перемикатися:
+Бот використовує **асинхронну гібридну архітектуру** із підтримкою мультимедіа та можливістю вибору AI-провайдерів у налаштуваннях:
 
 ```
-Користувач
-    │
-    ▼
-[Telegram API]
-    │
-    ▼
-[command_handlers / callback_handlers] ──► [user_states dict]
-    │
-    ▼
-[message_handlers: handle_message]
-    │
-    ├── Метод "base" (RAG-пайплайн) ──────► [generate_search_query]
-    │                                              │
-    │                                              ▼
-    │                                       [serper_search] ──► Google
-    │                                              │
-    │                                              ▼
-    │                                       [filter_sources]
-    │                                        (verified / unverified)
-    │                                              │
-    │                                              ▼
-    │                                       [call_base_gpt] (OpenAI)
-    │
-    ├── Метод "together" ──────────────────► [call_together] (Llama 3.1)
-    ├── Метод "openai_ft" ─────────────────► [call_openai_ft] (Fine-Tuned GPT)
-    └── Методи "sonar-*" ──────────────────► [call_perplexity] (Perplexity AI)
+                  Користувач
+                      │
+                      ▼
+                [Telegram API]
+                      │
+   ┌──────────────────┼─────────────────────┬──────────────────────┐
+   ▼                  ▼                     ▼                      ▼
+[Голос/Аудіо]    [Відео/Кружечок]     [Зображення / OCR]    [Посилання Threads]
+   │                  │                     │                      │
+[convert_to_wav]  [compress_video]    [extract_text_         [ThreadsService]
+   │                  │                from_image]                 │
+[transcribe_      [analyze_video_       (Vision)            (Текст + Зображення)
+ audio]            with_together]           │                      │
+(Deepgram)          (Qwen 3.6)              │                      │
+   │                  │                     │                      │
+   ▼                  ▼                     ▼                      ▼
+  Текст             Факти                 Текст                  Текст
+   │                  │                     │                      │
+   └──────────────────┴──────────┬──────────┴──────────────────────┘
+                                 │
+                                 ▼
+                     [message_handlers.py]
+                                 │
+       ┌─────────────────────────┼──────────────────────────┐
+       ▼                         ▼                          ▼
+  Метод "base"            Методи Fine-tuning           Методи "sonar-*"
+ (RAG Pipeline)         (Gemma, Llama, OpenAI FT)      (Perplexity API)
+       │                         │                          │
+[generate_search_query]          │                     [call_perplexity]
+       │                         │                     (Вбудований пошук)
+[serper_search] (Google)         ├─► call_together          │
+       │                         ├─► call_openai_ft         │
+[filter_sources]                 │                          │
+ (Verified / Unverified)         │                          │
+       │                         │                          │
+[call_base_gpt] (OpenAI)         │                          │
+       │                         │                          │
+       └─────────────────────────┼──────────────────────────┘
+                                 │
+                                 ▼
+                         [send_smart_reply]
+                     (Розбиття >4000 символів)
+                                 │
+                                 ▼
+                            Користувач
 ```
+
+### 🔁 Fallback-алгоритм пошуку
+Якщо при використанні методу **`base`** згенерований LLM пошуковий запит (алгоритм "Search Query Architect") не дає результатів у Google (наприклад, через надмірну заплутаність чи специфічність твердження), бот автоматично застосовує **Fallback-алгоритм**: бере перші 200 символів оригінального тексту користувача і виконує прямий пошук Google, щоб знайти хоч якісь спростування чи згадки в новинах.
 
 ---
 
@@ -331,83 +335,108 @@ git push origin feature/my-feature
 
 ```
 FactCheker/
-├── main.py                   # Точка входу, запуск бота
-├── requirements.txt          # Залежності проєкту
-├── pyproject.toml            # Конфігурація проєкту (ruff, setuptools)
-├── pytest.ini                # Конфігурація тестів
-├── .env                      # Змінні середовища (НЕ комітити!)
-├── .env.example              # Шаблон .env для розробників
+├── main.py                   # Точка входу, запуск бота та graceful shutdown
+├── requirements.txt          # Залежності проєкту (pip)
+├── pyproject.toml            # Конфігурація ruff, setuptools, метадані
+├── pytest.ini                # Налаштування pytest
+├── Makefile                  # Таск-раннер для розробника та сервера
 ├── database/
-│   └── db_manager.py         # SQLite: ліміти використання
+│   └── db_manager.py         # SQLite: Persistent-з'єднання, облік добових лімітів
 ├── handlers/
 │   ├── command_handlers.py   # Обробка /start
-│   ├── callback_handlers.py  # Обробка кнопок меню
-│   └── message_handlers.py   # Головна логіка перевірки новин
+│   ├── callback_handlers.py  # Обробка кнопок меню та довідки
+│   └── message_handlers.py   # Логіка обробки тексту, аудіо, відео, зображень та Threads посилань
 ├── services/
-│   ├── ai_service.py         # Виклики LLM (OpenAI, Together, Perplexity)
-│   └── search_service.py     # Пошук Google через Serper API
+│   ├── ai_service.py         # Ядро взаємодії з ШІ (OpenAI, Together, Perplexity, OpenRouter)
+│   ├── search_service.py     # Пошук Google через Serper API, білий список джерел (A+, A, B)
+│   ├── deepgram_service.py   # Розпізнавання голосу через Deepgram Nova-3 API
+│   └── threads_service.py    # Парсинг та Graph API інтеграція з Threads
 ├── utils/
-│   ├── helpers.py            # Утиліти: розбиття тексту, час, escaping
-│   ├── keyboards.py          # Telegram inline-клавіатури
-│   └── logger.py             # Логування та підрахунок вартості запитів
-├── tests/                    # Модульні тести (pytest)
-├── docs/
-│   ├── source/               # Sphinx .rst (UA)
-│   ├── source_en/            # Sphinx .rst (EN)
-│   └── build/                # Локально згенерований HTML (не в Git)
-└── .github/workflows/
-    └── docs.yml              # CI/CD: автоматична публікація на GitHub Pages
+│   ├── helpers.py            # Розбиття тексту, емодзі-шкала впевненості ШІ, конвертація аудіо, стиснення відео
+│   ├── keyboards.py          # Telegram inline-клавіатури для меню
+│   └── logger.py             # Логування та калькуляція фінансових витрат на токени (Text + JSONL)
+├── scripts/                  # Допоміжні скрипти автоматизації (PowerShell, Bash)
+├── tests/                    # Модульні та інтеграційні тести (pytest)
+└── docs/                     # Джерела документації Sphinx (.rst)
 ```
 
 ---
 
 ## 🧠 Ключові функції та модулі
 
-### `main.py`
+### `services/ai_service.py`
+Ядро AI системи, яке керує промптингом, роботою з баченням (Vision) та генерацією відповідей.
+
 | Функція | Опис |
 |---|---|
-| `main()` | Ініціалізує БД, реєструє обробники та запускає polling. Реалізує graceful shutdown з коректним закриттям AI-сесій та БД. |
-| `start_wrapper()`, `callback_wrapper()`, `message_wrapper()` | Обгортки для передачі спільного об'єкта `user_states` в обробники. |
+| `generate_search_query(user_text, model_id)` | Перетворює емоційний текст користувача на лаконічний пошуковий запит (виділяє "якірні факти"). |
+| `call_base_gpt(claim, verified_srcs, unverified_srcs, model_id, user_id, video_analysis)` | Реалізує RAG конвеєр: подає джерела двох рівнів довіри та аналіз відео у контекст моделі OpenAI для вердикту (ПРАВДА / МАНІПУЛЯЦІЯ / ФЕЙК / НЕПІДТВЕРДЖЕНО). |
+| `call_perplexity(claim, method, api_key, user_id)` | Викликає моделі серії Perplexity Sonar із вбудованим пошуком у реальному часі. |
+| `call_together(claim, model_id, uid)` | Надсилає запити до fine-tuned моделей Together AI (Llama 3.1 8B або gemma-3-12b). |
+| `call_openai_ft(claim, model_id, user_id)` | Звертається до fine-tuned моделі OpenAI (`ft:gpt-4o-mini...`). |
+| `extract_text_from_image(bot, file_id)` | Зчитує текст або детально аналізує події на зображенні з Telegram за допомогою моделі `gpt-4o-mini` Vision. |
+| `analyze_image_from_url(image_url)` | Аналізує зображення за URL-адресою (для картинок із постів Threads). |
+| `analyze_video_with_together(video_path)` | Аналізує стиснене відео за допомогою моделі `qwen/qwen3.6-35b-a3b` через OpenRouter. |
+| `extract_factors_from_video_analysis(analysis)` | Виділяє ключові пошукові тези на основі текстового опису відео. |
 
 ---
 
-### `services/ai_service.py`
-Ядро AI системи. Абстрагує роботу з трьома провайдерами.
+### `services/deepgram_service.py`
+Асинхронне перетворення аудіофайлів на текст.
 
 | Функція | Опис |
 |---|---|
-| `generate_search_query(user_text, model_id)` | **"Search Query Architect"**: перетворює емоційний текст на нейтральний пошуковий запит. |
-| `call_base_gpt(claim, verified_srcs, unverified_srcs, model_id, user_id)` | Реалізує **RAG**: передає AI відфільтровані джерела двох рівнів довіри. Вердикт: ПРАВДА / МАНІПУЛЯЦІЯ / ФЕЙК / НЕПІДТВЕРДЖЕНО. |
-| `call_perplexity(claim, method, api_key, user_id)` | Викликає моделі серії **Sonar** (з вбудованим пошуком). |
-| `call_together(claim, model_id, uid)` | Надсилає запит до **Together AI** (Llama 3.1). |
-| `call_openai_ft(claim, model_id, user_id)` | Надсилає запит до **fine-tuned моделі OpenAI**. |
+| `transcribe_audio(file_path)` | Надсилає аудіофайл на сервери Deepgram (модель `nova-3`, увімкнене автовизначення мови та інтелектуальне форматування). |
+
+---
+
+### `services/threads_service.py`
+Інтеграція з соціальною мережею Threads.
+
+| Метод / Клас | Опис |
+|---|---|
+| `ThreadsService` | Клас для роботи з API Threads. |
+| `is_token_valid()` | Перевіряє актуальність `THREADS_ACCESS_TOKEN`. |
+| `get_post_data(url)` | Повертає текст та зображення поста. Якщо ID поста числовий — робить запит до Graph API. Якщо літерний шорткод — скрапить HTML-код сторінки для обходу обмежень Graph API. |
 
 ---
 
 ### `services/search_service.py`
+Робота з пошуковою видачею Google та оцінка надійності сайтів.
 
-| Функція / Константа | Опис |
+| Елемент | Опис |
 |---|---|
-| `SOURCES` | Словник з трьома рівнями надійності: **A+** (gov.ua), **A** (Reuters, BBC), **B** (Суспільне, Guardian). |
+| `SOURCES` | Словник білих доменів: **A_PLUS** (держ. органи `gov.ua`, НБУ), **A** (BBC, Reuters, Укрінформ), **B** (Суспільне, Liga.net, Pravda). |
 | `serper_search(query, api_key)` | Асинхронний пошук Google через Serper.dev API (`gl=ua`, `hl=uk`). |
-| `filter_sources(results)` | Розділяє результати на `verified` та `unverified`. |
+| `filter_sources(results)` | Сортує отримані URL-адреси на `verified` (якщо домен є в `SOURCES`) та `unverified`. |
 
 ---
 
-### `database/db_manager.py`
+### `utils/helpers.py`
+Корисні утиліти для обробки медіа та тексту.
 
-| Функція / Константа | Опис |
+| Функція | Опис |
 |---|---|
-| `LIMITS` | Словник із денними лімітами. `sonar-deep-research: 0` (вимкнено), `sonar-reasoning-pro: 1`. |
-| `init_db()` | Відкриває постійне з'єднання з `bot_data.db` та створює таблицю `usage`. |
-| `check_and_increment_limit(user_id, model_name, admin_id)` | Перевіряє денний ліміт. Адмін — необмежений. |
-| `close_db()` | Коректно закриває з'єднання. |
+| `split_text(text, max_length)` | Безпечно розбиває великий текст на шматки, щоб уникнути ліміту Telegram у 4096 символів. |
+| `get_progress_bar(text)` | Парсить відсоток у тексті ШІ (наприклад "85%") і будує гарний візуальний емодзі-прогрес-бар. |
+| `convert_to_wav(input_path, output_path)` | Конвертує аудіозапис за допомогою FFmpeg у формат `16kHz, mono, wav` для найкращої якості розпізнавання. |
+| `compress_video(input_path, output_path)` | Зменшує роздільну здатність відео до 480p, знижує частоту до 5 кадрів/сек і вирізає звук за допомогою FFmpeg для економії токенів і швидкого надсилання у відеомодель. |
+
+---
+
+### `utils/logger.py`
+Централізоване логування та фінансовий моніторинг.
+
+| Функція | Опис |
+|---|---|
+| `setup_logging()` | Конфігурує логування у консоль та файл `app.log`. |
+| `log_ai_usage(method, model_name, usage_data, user_id)` | Асинхронно записує статистику використання токенів та автоматично розраховує фінансову вартість запиту відповідно до актуальних тарифів провайдерів. Записує дані в текстовому вигляді у `bot_usage.log` та у JSONL-вигляді у `usage_analytics.jsonl`. |
 
 ---
 
 ## 📚 Стандарти документування
 
-Проєкт використовує **Google Style Docstrings (PEP 257)**.
+Проєкт суворо використовує **Google Style Docstrings (PEP 257)**.
 
 ```python
 def my_function(param: str) -> bool:
@@ -427,9 +456,9 @@ def my_function(param: str) -> bool:
 
 **Правила для контриб'юторів:**
 1. Усі публічні функції та класи **зобов'язані** мати docstring.
-2. Перед комітом перевіряйте стиль: `ruff check .`
-3. Для запуску doctest-тестів: `python -m doctest utils/helpers.py -v`
-4. Для генерації документації локально: `cd docs && python -m sphinx -b html source build/html`
+2. Перед комітом перевіряйте стиль коду та документації: `make lint` (викликає `ruff check .`).
+3. Для тестування прикладів у документації (TDD-підхід): `python -m doctest utils/helpers.py -v`.
+4. Для генерації документації локально: `make docs`.
 
 ---
 
@@ -438,14 +467,11 @@ def my_function(param: str) -> bool:
 **Q: `ModuleNotFoundError` при запуску.**
 > Перевірте, що віртуальне середовище активовано (`(.venv)` у терміналі) та залежності встановлені (`pip install -r requirements.txt`).
 
-**Q: `python: command not found` або `python3` потрібен.**
-> На деяких системах Python 3 доступний лише як `python3`. Використовуйте `python3 main.py` та `python3 -m venv .venv`.
-
 **Q: Помилка `BOT_TOKEN не знайдено` або `NoneType`.**
 > Переконайтесь, що файл `.env` існує в кореневій папці проєкту та містить усі обов'язкові ключі.
 
-**Q: `ruff check .` повертає помилки.**
-> Спробуйте `ruff check --fix .` для автовиправлення. Решту виправте вручну згідно з рекомендаціями.
-
 **Q: Тести падають з `asyncio` помилками.**
 > Перевірте `pytest.ini` — має бути `asyncio_mode = auto`. Встановіть: `pip install pytest-asyncio`.
+
+**Q: Не працює конвертація аудіо/відео на Windows.**
+> Переконайтеся, що бібліотека `imageio-ffmpeg` встановлена. Вона автоматично завантажує необхідний бінарний файл FFmpeg. Якщо проблема залишається, перезапустіть термінал або встановіть FFmpeg вручну у PATH.

@@ -32,7 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, user_states:
         "⚙️ **Доступні методи (у налаштуваннях):**\n"
         "• `Base` — Швидка перевірка через Google та GPT.\n"
         "• `Web-search` — Глибокий пошук у реальному часі (Perplexity).\n"
-        "• `Fine-tuning` — Аналіз навченими моделями Llama 3.1 та GPT-4o-mini.\n\n"
+        "• `Fine-tuning` — Аналіз навченими моделями Llama 3.1, gemma-3-12b та GPT-4o-mini.\n\n"
         "⚡ *Зараз встановлено метод: Base*"
     )
     

@@ -65,6 +65,12 @@ async def handle_callback(update, context, user_states: dict):
             "✅ Обрано Fine-tune: Llama 3.1", reply_markup=get_main_menu()
         )
 
+    elif query.data == "set_ft_gemma":
+        user_states[uid]["method"] = "together_gemma"
+        await safe_edit(
+            "✅ Обрано Fine-tune: gemma-3-12b (smart)", reply_markup=get_main_menu()
+        )
+
     elif query.data == "set_ft_openai":
         user_states[uid]["method"] = "openai_ft"
         await safe_edit(
@@ -120,7 +126,7 @@ async def handle_callback(update, context, user_states: dict):
             "реальному часі по всьому інтернету. Найкраще "
             "підходить для свіжих подій, що сталися щойно.\n\n"
             "3️⃣ **🎯 Fine-tuning (Експертні моделі)**\n"
-            "Це моделі (Llama 3.1, GPT-4o-mini), які пройшли "
+            "Це моделі (Llama 3.1, gemma-3-12b (smart), GPT-4o-mini), які пройшли "
             "спеціальне «тренування» на великих архівах "
             "реальних фейків та маніпуляцій. Вони бачать "
             "структуру брехні навіть там, де вона прихована.\n\n"

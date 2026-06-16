@@ -84,6 +84,11 @@ async def test_log_ai_usage_cost_calculation_models():
         written2 = json.loads(mocked_file.write.call_args_list[-1][0][0].strip())
         assert written2["cost"] == 0.2  # 0.1 / 1M total
 
+        # Gemma (Together)
+        await log_ai_usage("TOGETHER", "google/gemma-3-12b-it", usage_data)
+        written3 = json.loads(mocked_file.write.call_args_list[-1][0][0].strip())
+        assert written3["cost"] == 0.3  # 0.15 / 1M total
+
 
 @pytest.mark.asyncio
 async def test_log_ai_usage_console_output_details():

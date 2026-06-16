@@ -99,10 +99,10 @@ async def test_check_and_increment_limit_exception_handling():
 
     with patch('database.db_manager._db_conn', conn), \
          patch('aiosqlite.Connection.execute', side_effect=Exception("SQL error")), \
-         patch('logging.error') as mock_log:
+         patch('database.db_manager.logger.error') as mock_log:
         allowed, limit = await check_and_increment_limit(123, "sonar-reasoning-pro", 0)
         assert allowed is False
         assert limit == 0
-        mock_log.assert_called_with("DB Error: SQL error")
+        mock_log.assert_called_with("DB Error: SQL error", exc_info=True)
 
     await conn.close()

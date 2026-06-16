@@ -87,11 +87,13 @@ async def log_ai_usage(method: str, model_name: str, usage_data: object, user_id
         # Приблизні тарифи: $3.00 / 1M input, $12.00 / 1M output
         cost = (p_tokens * 3.0 / 1_000_000) + (c_tokens * 12.0 / 1_000_000)
     
-    # 2. Розрахунок для Together AI (Llama 3.1 8B/70B)
+    # 2. Розрахунок для Together AI (Llama 3.1 8B/70B та Gemma)
     elif "llama-3.1-8b" in model_lower:
         cost = (p_tokens + c_tokens) * 0.1 / 1_000_000
     elif "llama-3.1-70b" in model_lower:
         cost = (p_tokens + c_tokens) * 0.8 / 1_000_000
+    elif "gemma" in model_lower:
+        cost = (p_tokens + c_tokens) * 0.15 / 1_000_000
 
     # 3. Стандартний GPT-4o-mini
     elif "gpt-4o-mini" in model_lower:
