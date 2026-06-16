@@ -183,13 +183,9 @@ SERPER_API_KEY=your_serper_key            # https://serper.dev/api-key
 # ================================================================
 # Назви моделей
 # ================================================================
-MODEL_NAME=gpt-5-mini                     # Базова модель для RAG аналізу
-MODEL_PREVIEW=gpt-4o-mini-search-preview  # Модель для прев'ю пошуку
-
-# Fine-tuned моделі
-MODEL_GPT_4_1_mini=ft:gpt-4o-mini:...     # Fine-tuned модель OpenAI (якщо є)
-MODEL_TOGETHER_FT=vantachput_c1a9/...     # Fine-tuned Gemma модель (together_gemma)
-MODEL_TOGETHER_FT_2=vantachput_c1a9/...   # Fine-tuned Llama модель (together)
+MODEL_NAME=gpt-4o-mini
+MODEL_GPT_4_1_mini=ft:gpt-4o-mini:...    # Ваша fine-tuned модель (якщо є)
+MODEL_TOGETHER_FT=meta-llama/Llama-3.1-8B-Instruct-Turbo
 
 # ================================================================
 # Адмін (Telegram user_id — для необмеженого доступу)
@@ -472,6 +468,3 @@ def my_function(param: str) -> bool:
 
 **Q: Тести падають з `asyncio` помилками.**
 > Перевірте `pytest.ini` — має бути `asyncio_mode = auto`. Встановіть: `pip install pytest-asyncio`.
-
-**Q: Не працює конвертація аудіо/відео на Windows.**
-> Переконайтеся, що бібліотека `imageio-ffmpeg` встановлена. Вона автоматично завантажує необхідний бінарний файл FFmpeg. Якщо проблема залишається, перезапустіть термінал або встановіть FFmpeg вручну у PATH.
