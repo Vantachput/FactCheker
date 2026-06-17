@@ -218,9 +218,16 @@ OpenAI на завантаження з певних CDN (наприклад, In
 <dl class="py function">
 <dt class="sig sig-object py" id="services.ai_service.call_together">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">services.ai_service.</span></span><span class="sig-name descname"><span class="pre">call_together</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/services/ai_service.html#call_together"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#services.ai_service.call_together" title="Link to this definition"></a></dt>
-<dd><p>Надсилає запит до Together AI (для нової fine-tuned моделі Llama 3.1 70B).</p>
-<p>Використовує специфічний системний промпт та структуру запиту,
-на якій навчалася модель (на основі val_100.jsonl).</p>
+<dd><p>Надсилає запит до Together AI для fine-tuned моделей (Llama 3.1 8B або gemma-3-12b).</p>
+<p>Автоматично обирає правильний промпт та форматування залежно від моделі:
+- Llama 3.1 8B (MODEL_TOGETHER_FT_2): простий промпт, відповідь одним словом</p>
+<blockquote>
+<div><p>(формат даних training_data_balanced.jsonl).</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>gemma-3-12b (MODEL_TOGETHER_FT): розгорнутий аналіз з обґрунтуванням та маркерами
+маніпуляцій (формат даних val.jsonl, дистиляція від gemma-4-31b).</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Параметри<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -230,7 +237,7 @@ OpenAI на завантаження з певних CDN (наприклад, In
 </ul>
 </dd>
 <dt class="field-even">Повертає<span class="colon">:</span></dt>
-<dd class="field-even"><p>Відформатована відповідь моделі з вердиктом та аргументами.</p>
+<dd class="field-even"><p>Відформатована відповідь моделі з вердиктом (та аргументами для gemma).</p>
 </dd>
 <dt class="field-odd">Тип повернення<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>

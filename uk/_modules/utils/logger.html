@@ -167,11 +167,13 @@
         <span class="c1"># Приблизні тарифи: $3.00 / 1M input, $12.00 / 1M output</span>
         <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_tokens</span> <span class="o">*</span> <span class="mf">3.0</span> <span class="o">/</span> <span class="mi">1_000_000</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">c_tokens</span> <span class="o">*</span> <span class="mf">12.0</span> <span class="o">/</span> <span class="mi">1_000_000</span><span class="p">)</span>
     
-    <span class="c1"># 2. Розрахунок для Together AI (Llama 3.1 8B/70B)</span>
+    <span class="c1"># 2. Розрахунок для Together AI (Llama 3.1 8B/70B та Gemma)</span>
     <span class="k">elif</span> <span class="s2">&quot;llama-3.1-8b&quot;</span> <span class="ow">in</span> <span class="n">model_lower</span><span class="p">:</span>
         <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_tokens</span> <span class="o">+</span> <span class="n">c_tokens</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">/</span> <span class="mi">1_000_000</span>
     <span class="k">elif</span> <span class="s2">&quot;llama-3.1-70b&quot;</span> <span class="ow">in</span> <span class="n">model_lower</span><span class="p">:</span>
         <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_tokens</span> <span class="o">+</span> <span class="n">c_tokens</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.8</span> <span class="o">/</span> <span class="mi">1_000_000</span>
+    <span class="k">elif</span> <span class="s2">&quot;gemma&quot;</span> <span class="ow">in</span> <span class="n">model_lower</span><span class="p">:</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_tokens</span> <span class="o">+</span> <span class="n">c_tokens</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.15</span> <span class="o">/</span> <span class="mi">1_000_000</span>
 
     <span class="c1"># 3. Стандартний GPT-4o-mini</span>
     <span class="k">elif</span> <span class="s2">&quot;gpt-4o-mini&quot;</span> <span class="ow">in</span> <span class="n">model_lower</span><span class="p">:</span>

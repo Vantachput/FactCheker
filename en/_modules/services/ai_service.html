@@ -450,25 +450,38 @@
 <div class="viewcode-block" id="call_together">
 <a class="viewcode-back" href="../../services.html#services.ai_service.call_together">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_together</span><span class="p">(</span><span class="n">claim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">uid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Together AI (для нової fine-tuned моделі Llama 3.1 70B).</span>
-<span class="sd">    </span>
-<span class="sd">    Використовує специфічний системний промпт та структуру запиту, </span>
-<span class="sd">    на якій навчалася модель (на основі val_100.jsonl).</span>
-<span class="sd">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Надсилає запит до Together AI для fine-tuned моделей (Llama 3.1 8B або gemma-3-12b).</span>
+
+<span class="sd">    Автоматично обирає правильний промпт та форматування залежно від моделі:</span>
+<span class="sd">    - Llama 3.1 8B (MODEL_TOGETHER_FT_2): простий промпт, відповідь одним словом</span>
+<span class="sd">      (формат даних training_data_balanced.jsonl).</span>
+<span class="sd">    - gemma-3-12b (MODEL_TOGETHER_FT): розгорнутий аналіз з обґрунтуванням та маркерами</span>
+<span class="sd">      маніпуляцій (формат даних val.jsonl, дистиляція від gemma-4-31b).</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        claim (str): Текст повідомлення/новини для перевірки.</span>
 <span class="sd">        model_id (str): ID моделі на платформі Together.</span>
 <span class="sd">        uid (int): ID користувача для логування використання.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: Відформатована відповідь моделі з вердиктом та аргументами.</span>
+<span class="sd">        str: Відформатована відповідь моделі з вердиктом (та аргументами для gemma).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
-    <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, &quot;</span>
-        <span class="s2">&quot;надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт.&quot;</span>
-    <span class="p">)</span>
-    <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Текст новини для аналізу: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model_id</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;⚠️ Помилка: ID моделі Together AI не знайдено в .env&quot;</span>
+
+    <span class="n">is_llama</span> <span class="o">=</span> <span class="s2">&quot;llama&quot;</span> <span class="ow">in</span> <span class="n">model_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> <span class="n">model_id</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_TOGETHER_FT_2&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_llama</span><span class="p">:</span>
+        <span class="c1"># Промпт для Llama 3.1 8B — навчалась на training_data_balanced.jsonl</span>
+        <span class="n">sys_prompt</span> <span class="o">=</span> <span class="s2">&quot;Ти аналітик новин. Визнач, чи є надана новина правдивою чи фейковою.&quot;</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Текст новини: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Промпт для gemma-3-12b — навчалась на val.jsonl (дистиляція від gemma-4-36b)</span>
+        <span class="n">sys_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Ти — професійний аналітик дезінформації. Твоє завдання — провести аналіз новини, &quot;</span>
+            <span class="s2">&quot;надати логічне обґрунтування, виділити маркери маніпуляцій та сформулювати підсумковий вердикт.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Текст новини для аналізу: </span><span class="si">{</span><span class="n">claim</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">together_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> 
@@ -483,9 +496,22 @@
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s1">&#39;usage&#39;</span><span class="p">):</span>
         <span class="k">await</span> <span class="n">log_ai_usage</span><span class="p">(</span><span class="s2">&quot;TOGETHER&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
     
-    <span class="n">raw_content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+    <span class="n">raw_content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     
-    <span class="c1"># Красиво форматуємо вивід під Telegram</span>
+    <span class="k">if</span> <span class="n">is_llama</span><span class="p">:</span>
+        <span class="c1"># Для Llama повертаємо красиву коротку оцінку</span>
+        <span class="n">verdict</span> <span class="o">=</span> <span class="n">raw_content</span>
+        <span class="n">verdict_upper</span> <span class="o">=</span> <span class="n">verdict</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;🔍&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;ПРАВДА&quot;</span> <span class="ow">in</span> <span class="n">verdict_upper</span> <span class="ow">or</span> <span class="s2">&quot;TRUSTED&quot;</span> <span class="ow">in</span> <span class="n">verdict_upper</span> <span class="ow">or</span> <span class="s2">&quot;TRUE&quot;</span> <span class="ow">in</span> <span class="n">verdict_upper</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;✅&quot;</span>
+            <span class="n">verdict</span> <span class="o">=</span> <span class="s2">&quot;ПРАВДА&quot;</span>
+        <span class="k">elif</span> <span class="s2">&quot;ФЕЙК&quot;</span> <span class="ow">in</span> <span class="n">verdict_upper</span> <span class="ow">or</span> <span class="s2">&quot;FAKE&quot;</span> <span class="ow">in</span> <span class="n">verdict_upper</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="s2">&quot;❌&quot;</span>
+            <span class="n">verdict</span> <span class="o">=</span> <span class="s2">&quot;ФЕЙК&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">emoji</span><span class="si">}</span><span class="s2"> **ВЕРДИКТ:** `</span><span class="si">{</span><span class="n">verdict</span><span class="si">}</span><span class="s2">`&quot;</span>
+    
+    <span class="c1"># Красиво форматуємо вивід під Telegram для Gemma</span>
     <span class="k">return</span> <span class="n">format_together_response</span><span class="p">(</span><span class="n">raw_content</span><span class="p">)</span></div>
 
 
@@ -552,6 +578,7 @@
     <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- GENERAL WEB SOURCES (Unverified/Contextual):</span><span class="se">\n</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">unverified_srcs</span><span class="p">:</span>
         <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unverified_srcs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
         <span class="n">context_text</span> <span class="o">+=</span> <span class="s2">&quot;No additional web mentions found.&quot;</span>
 
     <span class="k">if</span> <span class="n">video_analysis</span><span class="p">:</span>

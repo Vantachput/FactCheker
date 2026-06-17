@@ -94,7 +94,7 @@
     <span class="k">return</span> <span class="n">InlineKeyboardMarkup</span><span class="p">([</span>
         <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;📝 Класифікувати&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;menu_classify&quot;</span><span class="p">)],</span>
         <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;⚙️ Обрати спосіб&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;menu_settings&quot;</span><span class="p">)],</span>
-        <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;ℹ️ Справка&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;menu_help&quot;</span><span class="p">)]</span>
+        <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;ℹ️ Довідка&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;menu_help&quot;</span><span class="p">)]</span>
     <span class="p">])</span></div>
 
 
@@ -120,10 +120,11 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Повертає меню вибору навчених (Fine-tuned) моделей.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        InlineKeyboardMarkup: Кнопки для Llama та GPT-4o-mini.</span>
+<span class="sd">        InlineKeyboardMarkup: Кнопки для Llama, Gemma та GPT-4o-mini.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">InlineKeyboardMarkup</span><span class="p">([</span>
         <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;🦙 Llama 3.1 8B&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;set_ft_together&quot;</span><span class="p">)],</span>
+        <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;💎 gemma-3-12b (smart)&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;set_ft_gemma&quot;</span><span class="p">)],</span>
         <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;🤖 GPT-4o-mini&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;set_ft_openai&quot;</span><span class="p">)],</span>
         <span class="p">[</span><span class="n">InlineKeyboardButton</span><span class="p">(</span><span class="s2">&quot;⬅️ Назад&quot;</span><span class="p">,</span> <span class="n">callback_data</span><span class="o">=</span><span class="s2">&quot;menu_settings&quot;</span><span class="p">)]</span>
     <span class="p">])</span></div>
